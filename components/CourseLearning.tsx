@@ -4,10 +4,20 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import type { Course, CourseModuleItem } from "@/lib/courses";
 import {
-  GraduationCap, ChevronRight, ChevronLeft, Play, BookOpen,
-  Clock, Bookmark, MoreHorizontal, CheckCircle2, Lock, Menu, X,
-  FileText, Download, StickyNote, Maximize2,
+  GraduationCap, ChevronRight, ChevronLeft, Play, Pause, BookOpen,
+  Clock, Bookmark, MoreHorizontal, CheckCircle2,
+  FileText, StickyNote, Maximize2, Minimize2,
+  Check, Settings, Volume2, VolumeX, Eye,
 } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const PdfViewer = dynamic(() => import("@/components/PdfViewer"), { ssr: false });
+
+const formatTime = (s: number) => {
+  if (!isFinite(s) || isNaN(s)) return "0:00";
+  const m = Math.floor(s / 60);
+  return `${m}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
+};
 
 interface Lesson {
   moduleIndex: number;
@@ -43,7 +53,7 @@ const LAW_THUMBNAILS = [
 ];
 
 const TABS = ["Overview", "Notes", "Resources"] as const;
-type Tab = (typeof TABS)[number];
+type Tab = "Overview" | "Notes" | "Resources" | "Content";
 
 export default function CourseLearning({
   course,
@@ -54,7 +64,8 @@ export default function CourseLearning({
 }) {
   const lessons = useMemo(() => buildLessons(course), [course]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentPart, setCurrentPart] = useState(0);
+  const [viewingResource, setViewingResource] = useState<{ title: string; path: string } | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
   const [allNotes, setAllNotes] = useState<Record<string, string>>({});
   const [noteSaving, setNoteSaving] = useState<"idle" | "saving" | "saved">("idle");
@@ -62,6 +73,16 @@ export default function CourseLearning({
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [videoQuality, setVideoQuality] = useState("Auto");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsView, setSettingsView] = useState<"main" | "speed" | "quality">("main");
+  const settingsBtnRef = useRef<HTMLButtonElement>(null);
+  const settingsPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -109,6 +130,35 @@ export default function CourseLearning({
     return () => clearInterval(id);
   }, [currentIndex, lessons]);
 
+  // Reset quality, playback state, and close settings when switching lessons; speed persists
+  useEffect(() => {
+    setVideoQuality("Auto");
+    setSettingsOpen(false);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+    setCurrentPart(0);
+  }, [currentIndex]);
+
+  // Re-apply playback speed and capture duration when video metadata loads
+  const handleVideoLoaded = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.playbackRate = playbackSpeed;
+    setDuration(v.duration || 0);
+  }, [playbackSpeed]);
+
+  // Close settings panel on outside click
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      const inBtn = settingsBtnRef.current?.contains(e.target as Node);
+      const inPanel = settingsPanelRef.current?.contains(e.target as Node);
+      if (!inBtn && !inPanel) setSettingsOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
   const lessonId = `m${lessons[currentIndex]?.moduleIndex ?? 0}-l${lessons[currentIndex]?.lessonIndex ?? 0}`;
   const notes = allNotes[lessonId] ?? "";
 
@@ -152,6 +202,38 @@ export default function CourseLearning({
       return next;
     });
 
+  // Resolve active video source — supports multi-part lessons
+  const activeParts = current?.item?.parts?.length ? current.item.parts : null;
+  const activePart = activeParts ? (activeParts[currentPart] ?? activeParts[0]) : null;
+  const activeVideoUrl = activePart?.video_url || current?.item?.video_url || null;
+  const activeQualities = activePart?.video_qualities ?? current?.item?.video_qualities ?? null;
+
+  // Build sorted quality options: [["360p", "url"], ["720p", "url"], ...]
+  // Guard against malformed JSONB values (e.g. a plain string instead of an object)
+  const qualityOptions = useMemo(() => {
+    const q = activeQualities;
+    if (!q || typeof q !== "object" || Array.isArray(q) || Object.keys(q).length === 0) return null;
+    return Object.entries(q).sort(([a], [b]) => parseInt(a) - parseInt(b));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current, currentPart]);
+
+  // Switch video to a different quality URL without losing playback position
+  const switchQuality = useCallback((label: string, url: string) => {
+    setVideoQuality(label);
+    setSettingsOpen(false);
+    const video = videoRef.current;
+    if (!video) return;
+    const t = video.currentTime;
+    const playing = !video.paused;
+    video.src = url;
+    video.load();
+    video.addEventListener("loadedmetadata", () => {
+      video.currentTime = t;
+      video.playbackRate = playbackSpeed;
+      if (playing) video.play().catch(() => {});
+    }, { once: true });
+  }, [playbackSpeed]);
+
   if (!current) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -161,6 +243,7 @@ export default function CourseLearning({
   }
 
   return (
+    <>
     <div className="min-h-screen bg-white flex flex-col">
       {/* ── Top bar ───────────────────────────────────────── */}
       <header className="h-14 border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 bg-white sticky top-0 z-30 flex-shrink-0">
@@ -169,12 +252,12 @@ export default function CourseLearning({
             <div className="w-7 h-7 bg-primary-600 rounded-lg flex items-center justify-center">
               <GraduationCap className="w-4 h-4 text-white" />
             </div>
-            <span className="hidden sm:block text-sm font-bold text-gray-900">The Law Project</span>
+            <span className="text-sm font-bold text-gray-900">The Law Project</span>
           </Link>
 
           <span className="text-gray-300 hidden sm:block">/</span>
 
-          {/* Breadcrumb */}
+          {/* Breadcrumb — desktop only */}
           <nav className="hidden sm:flex items-center gap-1 text-xs text-gray-500 min-w-0">
             <Link href={`/course/${course.slug}`} className="hover:text-primary-600 truncate max-w-[140px]">
               {course.title}
@@ -186,11 +269,12 @@ export default function CourseLearning({
           </nav>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Desktop prev/next only */}
+        <div className="hidden sm:flex items-center gap-2">
           <button
             onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
             disabled={!canPrev}
-            className="hidden sm:flex items-center gap-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-3.5 h-3.5" /> Prev
           </button>
@@ -201,30 +285,17 @@ export default function CourseLearning({
           >
             Next <ChevronRight className="w-3.5 h-3.5" />
           </button>
-          <button className="sm:hidden p-2 text-gray-600" onClick={() => setSidebarOpen(true)}>
-            <Menu className="w-5 h-5" />
-          </button>
         </div>
       </header>
 
       <div className="flex flex-1 min-h-0 relative">
-        {/* ── Mobile sidebar overlay ────────────────────────── */}
-        {sidebarOpen && (
-          <div className="fixed inset-0 bg-black/40 z-40 sm:hidden" onClick={() => setSidebarOpen(false)} />
-        )}
-
         {/* ── Sidebar ───────────────────────────────────────── */}
         <aside
-          className={`fixed sm:relative inset-y-0 left-0 z-50 sm:z-auto w-72 sm:w-64 lg:w-72 bg-white border-r border-gray-100 flex flex-col transition-transform duration-200 ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
-          }`}
+          className="hidden sm:flex sm:relative sm:w-64 lg:w-72 bg-white border-r border-gray-100 flex-col"
         >
           {/* Sidebar header */}
           <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 flex-shrink-0">
             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Course Content</p>
-            <button className="sm:hidden" onClick={() => setSidebarOpen(false)}>
-              <X className="w-4 h-4 text-gray-400" />
-            </button>
           </div>
 
           {/* Progress pill */}
@@ -258,7 +329,7 @@ export default function CourseLearning({
                     return (
                       <button
                         key={lesson.globalIndex}
-                        onClick={() => { setCurrentIndex(lesson.globalIndex); setSidebarOpen(false); }}
+                        onClick={() => { setCurrentIndex(lesson.globalIndex); setActiveTab("Overview"); }}
                         className={`w-full flex items-start gap-3 px-4 py-2.5 text-left transition-colors ${
                           isActive
                             ? "bg-primary-50 border-r-2 border-primary-600"
@@ -309,20 +380,38 @@ export default function CourseLearning({
 
         {/* ── Main content ──────────────────────────────────── */}
         <main className="flex-1 overflow-y-auto min-w-0">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-24 sm:pb-6">
+
+            {/* Part tabs — shown when lesson has multiple video parts */}
+            {activeParts && activeParts.length > 1 && (
+              <div className="flex gap-2 mb-3 flex-wrap">
+                {activeParts.map((part, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { setCurrentPart(i); setIsPlaying(false); setCurrentTime(0); setDuration(0); setVideoQuality("Auto"); }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      currentPart === i
+                        ? "bg-primary-600 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {part.label || `Part ${i + 1}`}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Video player or placeholder */}
-            {current.item.video_url ? (
-              /* ── Real HTML5 video ── */
+            {activeVideoUrl ? (
+              /* ── Real HTML5 video — custom controls ── */
               <div
                 ref={videoContainerRef}
-                className="tlp-video-wrapper rounded-2xl overflow-hidden bg-black mb-5 w-full relative"
+                className="tlp-video-wrapper rounded-2xl overflow-hidden bg-black mb-5 w-full relative group/player"
               >
                 <video
                   ref={videoRef}
-                  key={current.item.video_url}
-                  src={current.item.video_url}
-                  controls
+                  key={activeVideoUrl}
+                  src={activeVideoUrl}
                   autoPlay={false}
                   className="w-full block"
                   style={
@@ -330,32 +419,22 @@ export default function CourseLearning({
                       ? { width: "100vw", height: "100vh", objectFit: "contain", maxHeight: "none" }
                       : { maxHeight: "60vh" }
                   }
-                  controlsList="nodownload nofullscreen"
+                  disablePictureInPicture
                   onContextMenu={(e) => e.preventDefault()}
-                >
-                  Your browser does not support the video element.
-                </video>
-
-                {/* Custom fullscreen button — replaces the native one removed via controlsList */}
-                <button
+                  onLoadedMetadata={handleVideoLoaded}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  onEnded={() => setIsPlaying(false)}
+                  onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime ?? 0)}
+                  onVolumeChange={() => setIsMuted(videoRef.current?.muted ?? false)}
                   onClick={() => {
-                    const el = videoContainerRef.current as HTMLDivElement & {
-                      webkitRequestFullscreen?: () => Promise<void>;
-                    };
-                    if (!el) return;
-                    if (document.fullscreenElement) {
-                      document.exitFullscreen().catch(() => {});
-                    } else {
-                      (el.requestFullscreen?.() ?? el.webkitRequestFullscreen?.())?.catch(() => {});
-                    }
+                    if (!videoRef.current) return;
+                    if (videoRef.current.paused) videoRef.current.play().catch(() => {});
+                    else videoRef.current.pause();
                   }}
-                  title="Fullscreen"
-                  className="absolute top-2 right-2 z-20 w-8 h-8 bg-black/40 hover:bg-black/70 rounded-lg flex items-center justify-center text-white transition-colors"
-                >
-                  <Maximize2 className="w-4 h-4" />
-                </button>
+                />
 
-                {/* Dynamic watermark — inside container so it stays in fullscreen */}
+                {/* Dynamic watermark */}
                 <div
                   aria-hidden="true"
                   style={{
@@ -373,6 +452,146 @@ export default function CourseLearning({
                   className="text-sm font-semibold"
                 >
                   {candidateName || "The Law Project"}
+                </div>
+
+                {/* Settings panel — anchored above controls bar, inside container */}
+                {settingsOpen && (
+                  <div
+                    ref={settingsPanelRef}
+                    className="absolute bottom-14 right-2 z-30 bg-gray-900/95 backdrop-blur-sm rounded-xl overflow-hidden min-w-[220px] shadow-xl text-white"
+                  >
+                    {settingsView === "main" && (
+                      <>
+                        {qualityOptions && (
+                          <button onClick={() => setSettingsView("quality")} className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/10">
+                            <span className="text-xs text-gray-400 font-medium">Video Quality</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-white">{videoQuality}</span>
+                              <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                            </div>
+                          </button>
+                        )}
+                        <button onClick={() => setSettingsView("speed")} className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/10 transition-colors">
+                          <span className="text-xs text-gray-400 font-medium">Speed</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-white">{playbackSpeed === 1 ? "Normal" : `${playbackSpeed}×`}</span>
+                            <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                          </div>
+                        </button>
+                      </>
+                    )}
+                    {settingsView === "speed" && (
+                      <>
+                        <button onClick={() => setSettingsView("main")} className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/10 transition-colors border-b border-white/10">
+                          <ChevronLeft className="w-4 h-4 text-gray-400" /><span className="text-sm font-medium">Speed</span>
+                        </button>
+                        {[0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3].map((s) => (
+                          <button key={s} onClick={() => { setPlaybackSpeed(s); if (videoRef.current) videoRef.current.playbackRate = s; setSettingsOpen(false); }} className="w-full flex items-center gap-3 px-4 py-1.5 hover:bg-white/10 transition-colors">
+                            <Check className={`w-3.5 h-3.5 flex-shrink-0 ${playbackSpeed === s ? "text-white" : "text-transparent"}`} />
+                            <span className={`text-sm ${playbackSpeed === s ? "text-white font-medium" : "text-gray-300"}`}>{s === 1 ? "Normal" : `${s}×`}</span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    {settingsView === "quality" && qualityOptions && (
+                      <>
+                        <button onClick={() => setSettingsView("main")} className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/10 transition-colors border-b border-white/10">
+                          <ChevronLeft className="w-4 h-4 text-gray-400" /><span className="text-sm font-medium">Quality</span>
+                        </button>
+                        <button onClick={() => activeVideoUrl && switchQuality("Auto", activeVideoUrl)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/10 transition-colors">
+                          <Check className={`w-3.5 h-3.5 flex-shrink-0 ${videoQuality === "Auto" ? "text-white" : "text-transparent"}`} />
+                          <span className={`text-sm ${videoQuality === "Auto" ? "text-white font-medium" : "text-gray-300"}`}>Auto</span>
+                        </button>
+                        {qualityOptions.map(([label, url]) => (
+                          <button key={label} onClick={() => switchQuality(label, url)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/10 transition-colors">
+                            <Check className={`w-3.5 h-3.5 flex-shrink-0 ${videoQuality === label ? "text-white" : "text-transparent"}`} />
+                            <span className={`text-sm ${videoQuality === label ? "text-white font-medium" : "text-gray-300"}`}>{label}</span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Custom controls bar */}
+                <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-8 pb-2 px-3">
+                  {/* Progress / seek bar */}
+                  <input
+                    type="range"
+                    min={0}
+                    max={duration || 100}
+                    step={0.1}
+                    value={currentTime}
+                    onChange={(e) => {
+                      const t = Number(e.target.value);
+                      if (videoRef.current) videoRef.current.currentTime = t;
+                      setCurrentTime(t);
+                    }}
+                    className="w-full h-1 mb-2 cursor-pointer accent-primary-500"
+                  />
+                  {/* Buttons row */}
+                  <div className="flex items-center gap-1">
+                    {/* Play / Pause */}
+                    <button
+                      onClick={() => {
+                        if (!videoRef.current) return;
+                        if (videoRef.current.paused) videoRef.current.play().catch(() => {});
+                        else videoRef.current.pause();
+                      }}
+                      className="w-8 h-8 flex items-center justify-center text-white hover:text-gray-300 transition-colors"
+                    >
+                      {isPlaying
+                        ? <Pause className="w-4 h-4 fill-white" />
+                        : <Play className="w-4 h-4 fill-white ml-0.5" />}
+                    </button>
+
+                    {/* Time */}
+                    <span className="text-[11px] text-white/80 font-mono select-none whitespace-nowrap px-1">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </span>
+
+                    <div className="flex-1" />
+
+                    {/* Mute */}
+                    <button
+                      onClick={() => {
+                        if (!videoRef.current) return;
+                        videoRef.current.muted = !videoRef.current.muted;
+                        setIsMuted(videoRef.current.muted);
+                      }}
+                      className="w-8 h-8 flex items-center justify-center text-white hover:text-gray-300 transition-colors"
+                    >
+                      {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    </button>
+
+                    {/* Settings gear */}
+                    <button
+                      ref={settingsBtnRef}
+                      onClick={() => { setSettingsOpen((v) => !v); setSettingsView("main"); }}
+                      title="Settings"
+                      className="w-8 h-8 flex items-center justify-center text-white hover:text-gray-300 transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </button>
+
+                    {/* Fullscreen */}
+                    <button
+                      onClick={() => {
+                        const el = videoContainerRef.current as HTMLDivElement & {
+                          webkitRequestFullscreen?: () => Promise<void>;
+                        };
+                        if (!el) return;
+                        if (document.fullscreenElement) {
+                          document.exitFullscreen().catch(() => {});
+                        } else {
+                          (el.requestFullscreen?.() ?? el.webkitRequestFullscreen?.())?.catch(() => {});
+                        }
+                      }}
+                      className="w-8 h-8 flex items-center justify-center text-white hover:text-gray-300 transition-colors"
+                    >
+                      {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -477,6 +696,17 @@ export default function CourseLearning({
                     {tab}
                   </button>
                 ))}
+                {/* Content tab — mobile only */}
+                <button
+                  onClick={() => setActiveTab("Content")}
+                  className={`sm:hidden px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === "Content"
+                      ? "border-primary-600 text-primary-600"
+                      : "border-transparent text-gray-500 hover:text-gray-800"
+                  }`}
+                >
+                  Content
+                </button>
               </div>
             </div>
 
@@ -533,42 +763,146 @@ export default function CourseLearning({
             {activeTab === "Resources" && (
               <div className="space-y-3">
                 <p className="text-sm text-gray-500 mb-4">Study materials for this lesson</p>
-                {[
-                  { icon: FileText, label: "Lecture Notes PDF", size: "2.4 MB", type: "PDF" },
-                  { icon: FileText, label: "Bare Act Reference Sheet", size: "1.1 MB", type: "PDF" },
-                  { icon: FileText, label: "Case Law Summary", size: "890 KB", type: "PDF" },
-                  { icon: Download, label: "Practice Questions", size: "540 KB", type: "DOCX" },
-                ].map((file) => (
+
+                {(!current.item.resources || current.item.resources.length === 0) && (
+                  <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                    <p className="text-xs text-amber-700 font-medium">
+                      No resources for this lesson yet. Check back after each module.
+                    </p>
+                  </div>
+                )}
+
+                {current.item.resources?.map((res) => (
                   <div
-                    key={file.label}
+                    key={res.path}
                     className="flex items-center justify-between gap-3 border border-gray-100 rounded-xl px-4 py-3 hover:border-primary-200 hover:bg-primary-50/30 transition-colors group"
+                    onContextMenu={(e) => e.preventDefault()}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-primary-100">
-                        <file.icon className="w-4 h-4 text-gray-500 group-hover:text-primary-600" />
+                        <FileText className="w-4 h-4 text-gray-500 group-hover:text-primary-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-800">{file.label}</p>
-                        <p className="text-xs text-gray-400">{file.type} · {file.size}</p>
+                        <p className="text-sm font-medium text-gray-800 select-none">{res.title}</p>
+                        <p className="text-xs text-gray-400 select-none">PDF · View only</p>
                       </div>
                     </div>
-                    <button className="flex items-center gap-1.5 text-xs font-medium text-primary-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Download className="w-3.5 h-3.5" /> Download
+                    <button
+                      onClick={() => setViewingResource(res)}
+                      className="flex items-center gap-1.5 text-xs font-medium text-primary-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Eye className="w-3.5 h-3.5" /> View
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
 
-                <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-                  <p className="text-xs text-amber-700 font-medium">
-                    Resources are added as the course progresses. Check back after each module.
-                  </p>
+            {/* Content tab — mobile only: inline lesson list */}
+            {activeTab === "Content" && (
+              <div className="sm:hidden">
+                {/* Progress */}
+                <div className="mb-4 px-1">
+                  <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+                    <span>{currentIndex + 1} / {lessons.length} lessons</span>
+                    <span className="font-medium text-primary-600">
+                      {Math.round(((currentIndex + 1) / lessons.length) * 100)}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary-600 rounded-full transition-all duration-300"
+                      style={{ width: `${((currentIndex + 1) / lessons.length) * 100}%` }}
+                    />
+                  </div>
                 </div>
+                {course.modules.map((mod, mi) => {
+                  const moduleLessons = lessons.filter((l) => l.moduleIndex === mi);
+                  return (
+                    <div key={mi} className="mb-1">
+                      <p className="px-1 pt-3 pb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        Module {mi + 1} · {mod.title}
+                      </p>
+                      {moduleLessons.map((lesson) => {
+                        const isActive = lesson.globalIndex === currentIndex;
+                        const isDone = lesson.globalIndex < currentIndex;
+                        return (
+                          <button
+                            key={lesson.globalIndex}
+                            onClick={() => { setCurrentIndex(lesson.globalIndex); setActiveTab("Overview"); }}
+                            className={`w-full flex items-start gap-3 px-2 py-2.5 rounded-xl text-left transition-colors ${
+                              isActive ? "bg-primary-50 border border-primary-100" : "hover:bg-gray-50"
+                            }`}
+                          >
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                              isDone ? "bg-emerald-100" : isActive ? "bg-primary-100" : "bg-gray-100"
+                            }`}>
+                              {isDone ? (
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              ) : lesson.type === "video" ? (
+                                <Play className={`w-2.5 h-2.5 ${isActive ? "text-primary-600" : "text-gray-400"}`} />
+                              ) : (
+                                <BookOpen className={`w-2.5 h-2.5 ${isActive ? "text-primary-600" : "text-gray-400"}`} />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className={`text-xs font-medium leading-snug truncate ${
+                                isActive ? "text-primary-700" : isDone ? "text-gray-500" : "text-gray-800"
+                              }`}>
+                                {lesson.item.title}
+                              </p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] text-gray-400 capitalize">{lesson.type}</span>
+                                {lesson.item.duration && (
+                                  <>
+                                    <span className="text-[10px] text-gray-300">·</span>
+                                    <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
+                                      <Clock className="w-2.5 h-2.5" /> {lesson.item.duration}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
           </div>
         </main>
       </div>
+
+      {/* ── Fixed bottom nav — mobile only ─────────────────── */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex gap-3 z-30">
+        <button
+          onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+          disabled={!canPrev}
+          className="flex-1 flex items-center justify-center gap-1.5 border border-gray-200 rounded-xl py-2.5 text-sm font-medium text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" /> Previous
+        </button>
+        <button
+          onClick={() => setCurrentIndex((i) => Math.min(lessons.length - 1, i + 1))}
+          disabled={!canNext}
+          className="flex-1 flex items-center justify-center gap-1.5 bg-primary-600 text-white rounded-xl py-2.5 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          Next <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
     </div>
+
+    {viewingResource && (
+      <PdfViewer
+        title={viewingResource.title}
+        path={viewingResource.path}
+        candidateName={candidateName}
+        onClose={() => setViewingResource(null)}
+      />
+    )}
+    </>
   );
 }

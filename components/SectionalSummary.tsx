@@ -59,7 +59,7 @@ export default function SectionalSummary({ sections }: { sections: SectionStat[]
 
   return (
     <div className="mb-8">
-      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Sectional Summary</h2>
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Sectional summary</h2>
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-x-auto">
         <table className="w-full text-sm min-w-[580px]">
           <thead>

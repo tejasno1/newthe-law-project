@@ -21,6 +21,7 @@ import ExamInstructionsContent from "@/components/ExamInstructionsContent";
 import { createClient } from "@/lib/supabase/client";
 import SectionalSummary, { computeSectionalStats } from "@/components/SectionalSummary";
 import TestResultView from "@/components/TestResultView";
+import { trackMcqEvent } from "@/lib/mcqTracking";
 import {
   GraduationCap,
   Flag,
@@ -150,6 +151,7 @@ export default function MockTestAttempt({ test, allTests = [] }: { test: MockTes
         return;
       }
       setCandidateName(getDisplayName(user.email ?? "", user.user_metadata ?? {}));
+      trackMcqEvent(test.slug, "test_start");
 
       // Start or resume server-side attempt
       try {
@@ -729,7 +731,7 @@ export default function MockTestAttempt({ test, allTests = [] }: { test: MockTes
         {showAllQuestions ? (
           <div className="p-4 sm:p-6 lg:flex-1 lg:min-h-0 lg:overflow-y-auto pb-28 lg:pb-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-gray-900 dark:text-white">All Questions</h2>
+              <h2 className="font-bold text-gray-900 dark:text-white">All questions</h2>
               <button
                 onClick={() => setShowAllQuestions(false)}
                 className="bg-primary-600 text-white rounded-xl px-5 py-2 text-sm font-medium hover:bg-primary-700 transition-colors"
@@ -849,7 +851,7 @@ export default function MockTestAttempt({ test, allTests = [] }: { test: MockTes
             <span className="font-semibold text-gray-900 dark:text-white">{candidateName}</span>
           </div>
 
-          <h3 className="font-bold text-gray-900 dark:text-white mb-3">Question Palette</h3>
+          <h3 className="font-bold text-gray-900 dark:text-white mb-3">Question palette</h3>
 
           <div className="flex gap-2 mb-4">
             <button onClick={() => setGridView(true)} className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${gridView ? "bg-primary-600 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>Grid View</button>
@@ -1091,7 +1093,7 @@ export default function MockTestAttempt({ test, allTests = [] }: { test: MockTes
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 w-full max-w-3xl">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Test Summary</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Test summary</h3>
               <button onClick={() => setShowSubmitModal(false)} aria-label="Close">
                 <X className="w-5 h-5 text-gray-400" />
               </button>
@@ -1142,7 +1144,7 @@ export default function MockTestAttempt({ test, allTests = [] }: { test: MockTes
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Report an Error with this Quiz</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Report an error with this quiz</h3>
               <button onClick={() => { setShowReportModal(false); setReportError(""); }} aria-label="Close">
                 <X className="w-5 h-5 text-gray-400" />
               </button>
@@ -1247,6 +1249,8 @@ function MockTestReport({
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewQuestions, setReviewQuestions] = useState<ReviewQuestion[] | null>(null);
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [attemptedDate, setAttemptedDate] = useState("");
+  const [attemptedTime, setAttemptedTime] = useState("");
   const isFirstParticipant = results.totalParticipants <= 1;
 
   // Auto-fetch review data on mount for sectional summary (attempt already submitted)
@@ -1257,6 +1261,11 @@ function MockTestReport({
       .then((data) => { if (data?.questions) setReviewQuestions(data.questions); })
       .catch(() => {});
   }, [attemptId]);
+
+  useEffect(() => {
+    setAttemptedDate(new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }));
+    setAttemptedTime(new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }));
+  }, []);
 
   const handleToggleSolutions = async () => {
     const next = !showSolutions;
@@ -1288,9 +1297,6 @@ function MockTestReport({
   ];
 
   const donutPercent = Math.max(0, Math.min(100, (results.score / results.maxScore) * 100));
-
-  const attemptedDate = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-  const attemptedTime = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1394,13 +1400,13 @@ function MockTestReport({
         </div>
         ) : (
         <div>
-        <h2 className="text-xl font-bold text-gray-900 mb-5">Overall Performance Summary</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-5">Overall performance summary</h2>
 
         <div className="grid lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2 rounded-2xl border border-gray-100 bg-white p-6">
             <div className="flex items-center gap-2 mb-5">
               <span className="w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0"><Trophy className="w-4 h-4 text-green-600" /></span>
-              <h3 className="font-bold text-gray-900">Score Achieved</h3>
+              <h3 className="font-bold text-gray-900">Score achieved</h3>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -1450,7 +1456,7 @@ function MockTestReport({
           <div className="rounded-2xl border border-gray-100 bg-white p-6 flex flex-col">
             <div className="flex items-center gap-2 mb-5">
               <span className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0"><Crown className="w-4 h-4 text-amber-600" /></span>
-              <h3 className="font-bold text-gray-900">{isFirstParticipant ? "Current Top Performer" : "Top Performer"}</h3>
+              <h3 className="font-bold text-gray-900">{isFirstParticipant ? "Current top performer" : "Top performer"}</h3>
             </div>
             <div className="flex items-center gap-3 bg-amber-50 rounded-xl p-4 mb-4">
               <span className="w-11 h-11 rounded-full bg-amber-200 text-amber-800 font-bold flex items-center justify-center text-lg flex-shrink-0">
@@ -1474,7 +1480,7 @@ function MockTestReport({
           <div className="rounded-2xl border border-gray-100 bg-white p-6">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0"><ClipboardList className="w-4 h-4 text-primary-600" /></span>
-              <h3 className="font-bold text-gray-900">Questions Attempted</h3>
+              <h3 className="font-bold text-gray-900">Questions attempted</h3>
             </div>
             <div className="h-2 rounded-full bg-gray-100 overflow-hidden mb-3">
               <div className="h-full bg-primary-600 rounded-full" style={{ width: `${((results.correct + results.incorrect) / test.questions.length) * 100}%` }} />
@@ -1487,7 +1493,7 @@ function MockTestReport({
           <div className="rounded-2xl border border-gray-100 bg-white p-6">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0"><Clock className="w-4 h-4 text-gray-700" /></span>
-              <h3 className="font-bold text-gray-900">Time Taken</h3>
+              <h3 className="font-bold text-gray-900">Time taken</h3>
             </div>
             <div className="h-2 rounded-full bg-gray-100 overflow-hidden mb-3">
               <div className="h-full bg-gray-900 rounded-full" style={{ width: `${Math.min((results.timeTaken / (test.durationMinutes * 60)) * 100, 100)}%` }} />
@@ -1500,7 +1506,7 @@ function MockTestReport({
           <div className="rounded-2xl border border-gray-100 bg-white p-6">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0"><Percent className="w-4 h-4 text-purple-600" /></span>
-              <h3 className="font-bold text-gray-900">Attempt Accuracy</h3>
+              <h3 className="font-bold text-gray-900">Attempt accuracy</h3>
             </div>
             <div className="h-2 rounded-full bg-gray-100 overflow-hidden mb-3">
               <div className="h-full bg-purple-500 rounded-full" style={{ width: `${results.accuracy}%` }} />
@@ -1544,7 +1550,7 @@ function MockTestReport({
           </div>
 
           <div className="rounded-2xl border border-gray-100 bg-white p-6">
-            <h3 className="font-bold text-gray-900 mb-4">Leader Board</h3>
+            <h3 className="font-bold text-gray-900 mb-4">Leaderboard</h3>
             <ul className="space-y-1.5">
               {leaderboard.map((entry, i) => (
                 <li key={entry.name} className="flex items-center justify-between px-2 py-2.5 rounded-lg hover:bg-gray-50">

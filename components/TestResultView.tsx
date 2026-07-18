@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { GraduationCap, Check, X, ArrowLeft } from "lucide-react";
+import { trackMcqEvent } from "@/lib/mcqTracking";
 import type { MockTestSafe } from "@/lib/mockTests";
 import SectionalSummary, { computeSectionalStats } from "@/components/SectionalSummary";
 
@@ -55,6 +56,10 @@ export default function TestResultView({
       .catch(() => {});
   }, [attemptId]);
 
+  useEffect(() => {
+    trackMcqEvent(test.slug, "result_view");
+  }, [test.slug]);
+
   const isFirstParticipant = results.totalParticipants <= 1;
   const donutPct = Math.max(0, Math.min(100, (results.score / results.maxScore) * 100));
 
@@ -81,7 +86,8 @@ export default function TestResultView({
           </div>
           <div className="flex gap-2 flex-wrap">
             {onReattempt ? (
-              <button onClick={onReattempt}
+              <button
+                onClick={() => { trackMcqEvent(test.slug, "test_reattempt"); onReattempt(); }}
                 className="bg-primary-600 text-white rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-primary-700 transition-colors"
               >
                 Reattempt Test
@@ -160,7 +166,7 @@ export default function TestResultView({
         ) : (
           /* ── Performance Summary ───────────── */
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Overall Performance Summary</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Overall performance summary</h2>
 
             <div className="grid lg:grid-cols-3 gap-5 mb-6">
               {/* Score card */}

@@ -3,22 +3,22 @@ import Footer from "@/components/Footer";
 
 const toc = [
   { id: "introduction", label: "1. Introduction" },
-  { id: "general", label: "2. General Principles" },
-  { id: "live", label: "3. Live Online Courses" },
-  { id: "recorded", label: "4. Recorded Courses" },
-  { id: "digital", label: "5. Digital Products" },
-  { id: "mentorship", label: "6. Mentorship Programmes" },
+  { id: "general", label: "2. General principles" },
+  { id: "live", label: "3. Live online courses" },
+  { id: "recorded", label: "4. Recorded courses" },
+  { id: "digital", label: "5. Digital products" },
+  { id: "mentorship", label: "6. Mentorship programmes" },
   { id: "subscriptions", label: "7. Subscriptions" },
-  { id: "books", label: "8. Books & Physical Products" },
-  { id: "promotional", label: "9. Promotional Offers" },
-  { id: "transfer", label: "10. Transfer of Enrolment" },
-  { id: "change", label: "11. Change of Course" },
+  { id: "books", label: "8. Books & physical products" },
+  { id: "promotional", label: "9. Promotional offers" },
+  { id: "transfer", label: "10. Transfer of enrolment" },
+  { id: "change", label: "11. Change of course" },
   { id: "cancellation", label: "12. Cancellation by TLP" },
   { id: "norefund", label: "13. No-Refund Circumstances" },
-  { id: "exceptional", label: "14. Exceptional Circumstances" },
+  { id: "exceptional", label: "14. Exceptional circumstances" },
   { id: "procedure", label: "15. Refund Procedure" },
   { id: "contact", label: "16. Contact" },
-  { id: "amendments", label: "17. Policy Amendments" },
+  { id: "amendments", label: "17. Policy amendments" },
 ];
 
 function H2({ id, children }: { id: string; children: React.ReactNode }) {
@@ -55,10 +55,10 @@ export default function RefundPage() {
       <Navbar />
 
       {/* Hero */}
-      <div className="bg-gray-50 dark:bg-gray-800 pt-20 pb-10 border-b border-gray-100 dark:border-gray-700">
+      <div className="bg-gray-50 dark:bg-gray-800 pt-28 pb-10 border-b border-gray-100 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-2">Legal</p>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">Refund & Cancellation Policy</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">Refund & cancellation policy</h1>
           <div className="flex flex-wrap gap-6 text-sm text-gray-500 dark:text-gray-400 mt-3">
             <span><span className="font-medium text-gray-700 dark:text-gray-300">Effective Date:</span> ____________</span>
             <span><span className="font-medium text-gray-700 dark:text-gray-300">Last Updated:</span> ____________</span>
@@ -95,7 +95,7 @@ export default function RefundPage() {
             <P>Since many of our Services involve immediate allocation of faculty time, digital access, intellectual property and educational resources, this Refund & Cancellation Policy governs every request relating to cancellation, withdrawal, refund, transfer or modification of enrolments.</P>
             <P>By enrolling in any Course or purchasing any Product or Service, you acknowledge that you have read, understood and agreed to this Policy.</P>
 
-            <H2 id="general">2. General Principles</H2>
+            <H2 id="general">2. General principles</H2>
             <div className="space-y-2 mb-4 text-sm text-gray-600 dark:text-gray-400">
               <p><span className="font-semibold text-gray-800 dark:text-gray-200">2.1</span> Every refund request shall be considered strictly in accordance with this Policy.</p>
               <p><span className="font-semibold text-gray-800 dark:text-gray-200">2.2</span> Refunds shall not be granted merely because a User changes his or her mind after enrolment.</p>
@@ -104,7 +104,7 @@ export default function RefundPage() {
               <p><span className="font-semibold text-gray-800 dark:text-gray-200">2.5</span> Any approved refund may take up to <strong>15 business days</strong> to be processed, subject to banking and payment gateway timelines.</p>
             </div>
 
-            <H2 id="live">3. Live Online Courses</H2>
+            <H2 id="live">3. Live online courses</H2>
             <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Before Commencement</p>
             <P>Unless otherwise specified on the relevant Course page, a student may request cancellation before the commencement of the Course. If approved, the following deductions may apply:</P>
             <Ul items={["Administrative Charges", "Payment Gateway Charges", "Taxes, where applicable"]} />
@@ -113,35 +113,35 @@ export default function RefundPage() {
               Once the first live class has commenced, refunds shall ordinarily not be granted. This is because academic resources, faculty allocation, study plans and classroom seats are committed upon commencement of the Course.
             </InfoBox>
 
-            <H2 id="recorded">4. Recorded Courses</H2>
+            <H2 id="recorded">4. Recorded courses</H2>
             <P>Recorded Courses are digital educational products. Upon successful payment and grant of access, the User receives immediate access to proprietary educational content. Accordingly:</P>
             <Ul items={["Recorded Courses are non-refundable.", "Recorded Courses are non-transferable.", "Recorded Courses are non-exchangeable."]} />
             <P>This policy applies irrespective of the extent to which the User has viewed the Course.</P>
 
-            <H2 id="digital">5. Digital Products</H2>
+            <H2 id="digital">5. Digital products</H2>
             <P>The following digital products are non-refundable once access has been granted:</P>
             <Ul items={["Digital Books", "PDFs", "Notes", "Question Banks", "Mock Tests", "Test Series", "Digital Libraries", "Current Affairs Compendiums", "Study Material", "Practice Sheets", "Downloadable Resources", "AI Learning Resources"]} />
 
-            <H2 id="mentorship">6. Mentorship Programmes</H2>
+            <H2 id="mentorship">6. Mentorship programmes</H2>
             <P>Mentorship involves advance allocation of mentor time and academic planning. Accordingly, mentorship fees are ordinarily non-refundable after confirmation of enrolment.</P>
             <P>Where mentorship has not commenced, requests may be considered solely at the discretion of The Law Project.</P>
 
             <H2 id="subscriptions">7. Subscriptions</H2>
             <P>Subscription plans are non-refundable after activation. Cancellation of a subscription shall terminate future renewals, if any, but shall not ordinarily entitle the User to a refund for the unused portion of the subscription period.</P>
 
-            <H2 id="books">8. Books & Physical Products</H2>
+            <H2 id="books">8. Books & physical products</H2>
             <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Damaged or Incorrect Delivery</p>
             <P>Where a physical book or product is delivered in a damaged condition or an incorrect item is supplied, the User shall notify The Law Project within <strong>seven (7) days</strong> of delivery. Upon verification, The Law Project may replace the product or issue a refund, where replacement is not reasonably possible.</P>
             <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Non-Delivery</p>
             <P>Where a shipment is lost due to reasons attributable to The Law Project or its logistics partner, a replacement or refund may be offered.</P>
 
-            <H2 id="promotional">9. Promotional Offers</H2>
+            <H2 id="promotional">9. Promotional offers</H2>
             <P>Admissions secured under launch offers, scholarship programmes, promotional discounts, coupon codes, referral benefits, or special campaigns shall be governed by the specific terms of the relevant offer. Unless expressly stated otherwise, such admissions shall be non-refundable.</P>
 
-            <H2 id="transfer">10. Transfer of Enrolment</H2>
+            <H2 id="transfer">10. Transfer of enrolment</H2>
             <P>Course enrolments are personal. Requests to transfer admission to another individual shall ordinarily not be entertained. In exceptional circumstances, The Law Project may consider such requests at its sole discretion.</P>
 
-            <H2 id="change">11. Change of Course</H2>
+            <H2 id="change">11. Change of course</H2>
             <P>Requests to migrate from one Course to another may be considered where seats are available, academic compatibility exists, and applicable fee differences are paid. Approval shall remain entirely at the discretion of The Law Project.</P>
 
             <H2 id="cancellation">12. Cancellation by The Law Project</H2>
@@ -149,14 +149,14 @@ export default function RefundPage() {
             <Ul items={["A full refund; or", "Transfer to another batch; or", "Transfer to another Course of equivalent value."]} />
             <P>The choice of remedy shall ordinarily be determined in consultation with the User.</P>
 
-            <H2 id="norefund">13. Circumstances Where Refunds Shall Not Be Granted</H2>
+            <H2 id="norefund">13. Circumstances where refunds shall not be granted</H2>
             <P>Refunds shall ordinarily not be granted where:</P>
             <Ul items={["The User has accessed a Recorded Course;", "Live classes have commenced;", "The User discontinues preparation voluntarily;", "Examination dates change;", "Examination patterns change;", "Faculty allocation changes;", "Schedules are modified reasonably;", "Internet connectivity issues occur at the User's end;", "The User is unable to attend classes due to personal reasons;", "The User is expelled for violating the Terms of Use;", "The User shares login credentials;", "Piracy or copyright infringement is detected."]} />
 
-            <H2 id="exceptional">14. Exceptional Circumstances</H2>
+            <H2 id="exceptional">14. Exceptional circumstances</H2>
             <P>Nothing contained in this Policy shall prevent The Law Project from granting a refund, credit, extension or other appropriate relief in deserving cases. Such decisions shall be entirely discretionary and shall not constitute a precedent for future cases.</P>
 
-            <H2 id="procedure">15. Refund Request Procedure</H2>
+            <H2 id="procedure">15. Refund request procedure</H2>
             <P>Users seeking a refund shall submit a written request containing:</P>
             <Ul items={["Full Name", "Registered Email Address", "Contact Number", "Course Name", "Date of Enrolment", "Payment Details", "Reason for Refund"]} />
             <P>The Law Project may seek additional documents where necessary.</P>
@@ -169,7 +169,7 @@ export default function RefundPage() {
               <p>Phone: __________________</p>
             </div>
 
-            <H2 id="amendments">17. Policy Amendments</H2>
+            <H2 id="amendments">17. Policy amendments</H2>
             <P>The Law Project reserves the right to modify this Refund & Cancellation Policy from time to time. The revised Policy shall become effective upon publication on the Platform. Continued use of the Platform shall constitute acceptance of the revised Policy.</P>
 
             <div className="mt-12 pt-8 border-t border-gray-100 dark:border-gray-700">

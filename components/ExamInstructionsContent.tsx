@@ -38,7 +38,7 @@ export default function ExamInstructionsContent({ durationMinutes }: { durationM
         The question(s) &quot;Answered and Marked for Review&quot; will be considered for evaluation.
       </p>
 
-      <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Navigating to a Question:</h3>
+      <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Navigating to a question:</h3>
       <ol start={4} className="space-y-3 text-sm text-gray-600 dark:text-gray-400 leading-relaxed list-decimal list-outside ml-5 mb-5">
         <li>
           To answer a question, do the following:
@@ -49,7 +49,7 @@ export default function ExamInstructionsContent({ durationMinutes }: { durationM
         </li>
       </ol>
 
-      <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Answering a Question:</h3>
+      <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Answering a question:</h3>
       <ol start={5} className="space-y-3 text-sm text-gray-600 dark:text-gray-400 leading-relaxed list-decimal list-outside ml-5 mb-2">
         <li>
           Procedure for answering a multiple choice (MCQ) type question:

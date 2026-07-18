@@ -3,6 +3,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-}
+  transpilePackages: ["pdfjs-dist"],
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

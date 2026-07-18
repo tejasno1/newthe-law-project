@@ -1,9 +1,13 @@
 import { supabase } from "@/lib/supabaseClient";
 
 export interface ContentBlock {
-  type: "heading" | "paragraph" | "quote" | "numbered" | "bulleted";
+  type: "heading" | "paragraph" | "quote" | "numbered" | "bulleted" | "html" | "image" | "divider";
   text?: string;
   items?: string[];
+  html?: string;
+  src?: string;
+  alt?: string;
+  level?: 1 | 2 | 3 | 4;
 }
 
 export interface BlogPost {

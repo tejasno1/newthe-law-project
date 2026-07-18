@@ -65,7 +65,7 @@ export default function TestimonialSlider({ reviews }: { reviews: Review[] }) {
             <span className="inline-block py-1 px-3 rounded-full bg-primary-600/10 text-primary-600 font-semibold text-xs uppercase tracking-wider mb-3">
               Testimonials
             </span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">What Students Say</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">What students say</h2>
             <div className="w-12 h-1 bg-primary-600 rounded-full mt-3" />
           </div>
           <div className="flex gap-2 mb-1">

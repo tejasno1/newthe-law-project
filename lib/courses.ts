@@ -1,10 +1,56 @@
-import { supabase } from "@/lib/supabaseClient";
+import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
+
+export interface VideoPart {
+  label: string;
+  video_url: string;
+  video_qualities?: Record<string, string>;
+}
+
+export interface CourseResource {
+  title: string;
+  path: string;
+}
 
 export interface CourseModuleItem {
   title: string;
   duration?: string;
   content_type?: "video" | "reading";
   video_url?: string;
+  video_qualities?: Record<string, string>;
+  parts?: VideoPart[];
+  resources?: CourseResource[];
+}
+
+interface LessonRow {
+  course_slug: string;
+  module_index: number;
+  lesson_index: number;
+  video_url: string | null;
+  video_qualities: Record<string, string> | null;
+  parts: VideoPart[] | null;
+  resources: CourseResource[] | null;
+}
+
+function mergeLessons(course: Course, dbLessons: LessonRow[]): Course {
+  return {
+    ...course,
+    modules: course.modules.map((mod, mi) => ({
+      ...mod,
+      items: mod.items.map((item, li) => {
+        const row = dbLessons.find(
+          (l) => l.course_slug === course.slug && l.module_index === mi && l.lesson_index === li
+        );
+        if (!row) return item;
+        return {
+          ...item,
+          ...(row.video_url ? { video_url: row.video_url } : {}),
+          ...(row.video_qualities ? { video_qualities: row.video_qualities } : {}),
+          ...(row.parts?.length ? { parts: row.parts } : {}),
+          ...(row.resources?.length ? { resources: row.resources } : {}),
+        };
+      }),
+    })),
+  };
 }
 
 export interface CourseModule {
@@ -164,14 +210,18 @@ const mapRow = (row: CourseRow): Course => ({
 });
 
 export async function getAllCourses(): Promise<Course[]> {
-  const { data, error } = await supabase.from("courses").select("*").order("id", { ascending: true });
+  const [{ data, error }, { data: lessonRows }] = await Promise.all([
+    supabase.from("courses").select("*").order("id", { ascending: true }),
+    supabase.from("course_lessons").select("course_slug, module_index, lesson_index, video_url, video_qualities, parts, resources"),
+  ]);
 
   if (error) {
     console.error("Failed to load courses from Supabase:", error.message);
     return [];
   }
 
-  return (data as CourseRow[]).map(mapRow);
+  const lessons = (lessonRows ?? []) as LessonRow[];
+  return (data as CourseRow[]).map((row) => mergeLessons(mapRow(row), lessons));
 }
 
 export async function getCourseSlugs(): Promise<string[]> {
@@ -186,7 +236,10 @@ export async function getCourseSlugs(): Promise<string[]> {
 }
 
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
-  const { data, error } = await supabase.from("courses").select("*").eq("slug", slug).maybeSingle();
+  const [{ data, error }, { data: lessonRows }] = await Promise.all([
+    supabase.from("courses").select("*").eq("slug", slug).maybeSingle(),
+    supabase.from("course_lessons").select("course_slug, module_index, lesson_index, video_url, video_qualities, parts, resources").eq("course_slug", slug),
+  ]);
 
   if (error) {
     console.error("Failed to load course from Supabase:", error.message);
@@ -195,5 +248,6 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
 
   if (!data) return null;
 
-  return mapRow(data as CourseRow);
+  const course = mapRow(data as CourseRow);
+  return mergeLessons(course, (lessonRows ?? []) as LessonRow[]);
 }

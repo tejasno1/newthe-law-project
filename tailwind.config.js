@@ -29,7 +29,7 @@ module.exports = {
         }
       },
       fontFamily: {
-        sans: ['Manrope', 'system-ui', 'sans-serif'],
+        sans: ['"Radio Canada Big"', '"Radio Canada Big Placeholder"', 'sans-serif'],
       },
     },
   },

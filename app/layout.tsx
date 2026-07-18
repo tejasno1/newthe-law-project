@@ -1,15 +1,7 @@
 import type { Metadata } from "next"
-import { Space_Grotesk } from "next/font/google"
 import "./globals.css"
 import WhatsAppWidget from "@/components/WhatsAppWidget"
 import { ThemeProvider } from "@/components/ThemeProvider"
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-  variable: "--font-space-grotesk",
-})
 
 export const metadata: Metadata = {
   title: "The Law Project",
@@ -22,8 +14,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={spaceGrotesk.variable}>
-      <body className={`${spaceGrotesk.className} antialiased bg-white dark:bg-gray-900 transition-colors duration-300`}>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Radio+Canada+Big:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet" />
+      </head>
+      <body className="antialiased bg-white dark:bg-gray-900 transition-colors duration-300">
         <ThemeProvider>
           {children}
           <WhatsAppWidget />

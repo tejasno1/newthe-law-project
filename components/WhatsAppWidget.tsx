@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { X, MessageCircle } from "lucide-react";
 
 // ← Replace with your actual WhatsApp number (country code + number, no spaces or +)
@@ -8,6 +9,7 @@ const WHATSAPP_NUMBER = "9555634585";
 const WHATSAPP_MESSAGE = "Hi! I'm interested in The Law Project courses. Can you help me?";
 
 export default function WhatsAppWidget() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
 
@@ -17,6 +19,8 @@ export default function WhatsAppWidget() {
     return () => clearTimeout(t);
   }, []);
 
+  if (pathname.startsWith("/admin")) return null;
+
   const openWhatsApp = () => {
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
     window.open(url, "_blank", "noopener,noreferrer");
@@ -25,7 +29,7 @@ export default function WhatsAppWidget() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+    <div className="fixed bottom-6 right-6 z-50 hidden sm:flex flex-col items-end gap-3">
       {/* Chat bubble */}
       {open && (
         <div className="bg-white rounded-2xl shadow-2xl shadow-black/15 border border-gray-100 w-72 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">

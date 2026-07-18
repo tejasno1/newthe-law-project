@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import type { BlogPost } from "@/lib/blogs";
-import { ArrowLeft, ArrowRight, Instagram, Linkedin, Mail, Twitter } from "lucide-react";
+import { LayoutGrid, BookOpen, Scale, FileText, ClipboardList, Clock } from "lucide-react";
 
 const covers = [
   "bg-gradient-to-br from-black via-primary-700 to-primary-400",
@@ -13,21 +13,22 @@ const covers = [
   "bg-gradient-to-r from-primary-700 via-black to-primary-400",
 ];
 
-const coverClass = (i: number) => covers[i % covers.length];
+const CAT_ICONS: Record<string, React.ElementType> = {
+  "All":            LayoutGrid,
+  "Constitutional": Scale,
+  "Criminal":       FileText,
+  "Civil":          ClipboardList,
+  "Corporate":      BookOpen,
+};
+function catIcon(name: string): React.ElementType {
+  for (const key of Object.keys(CAT_ICONS)) {
+    if (name.toLowerCase().includes(key.toLowerCase())) return CAT_ICONS[key];
+  }
+  return BookOpen;
+}
 
 export default function BlogCatalog({ posts }: { posts: BlogPost[] }) {
-  const [heroIndex, setHeroIndex] = useState(0);
-  const heroPosts = posts.slice(0, 3);
-  const heroPost = heroPosts[heroIndex];
-
-  const textRowPosts = posts.slice(3, 6);
-  const gridPosts = posts.slice(6);
-
-  const categories = Array.from(new Set(posts.map((p) => p.category)));
-
-  const featuredMentors = Array.from(new Map(posts.map((p) => [p.author, { name: p.author, img: p.authorImg }])).values()).slice(0, 5);
-
-  const tags = Array.from(new Set(posts.flatMap((p) => p.tags)));
+  const [activeCategory, setActiveCategory] = useState("All");
 
   if (posts.length === 0) {
     return (
@@ -39,90 +40,60 @@ export default function BlogCatalog({ posts }: { posts: BlogPost[] }) {
     );
   }
 
+  const categories = ["All", ...Array.from(new Set(posts.map((p) => p.category)))];
+
+  const filtered = activeCategory === "All"
+    ? posts
+    : posts.filter((p) => p.category === activeCategory);
+
   return (
-    <>
-      <section className="pt-28 sm:pt-32 pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap justify-center gap-3 mb-10">
-            {categories.map((cat) => (
-              <span key={cat} className="px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                {cat}
-              </span>
-            ))}
-          </div>
+    <section className="bg-white dark:bg-gray-900 pt-28 sm:pt-32 pb-14 sm:pb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className={`relative rounded-3xl overflow-hidden ${coverClass(heroIndex)} min-h-[420px] flex items-end p-6 sm:p-10`}
-          >
-            <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 max-w-md">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">{heroPost.category.toUpperCase()}</span>
-                <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">{heroPost.readTime}</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">{heroPost.title}</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{heroPost.excerpt}</p>
-              <div className="flex items-center gap-3 mb-6">
-                <img src={heroPost.authorImg} alt={heroPost.author} className="w-9 h-9 rounded-full object-cover" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{heroPost.author}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{heroPost.date}</p>
-                </div>
-              </div>
-              <Link
-                href={`/blogs/${heroPost.slug}`}
-                className="inline-flex items-center gap-2 border border-gray-200 dark:border-gray-600 rounded-full px-5 py-2.5 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        {/* Heading */}
+        <div className="text-center max-w-2xl mx-auto mt-6 sm:mt-4 mb-6 sm:mb-10">
+          <p className="text-[10px] sm:text-xs font-bold tracking-widest text-primary-600 uppercase mb-2 sm:mb-3">
+            News, Analysis &amp; Career Roadmaps
+          </p>
+          <h1 className="text-[22px] sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 leading-tight">
+            Your guide to become a{" "}
+            <span className="text-gradient">complete lawyer</span>
+          </h1>
+          <p className="text-xs sm:text-base text-gray-500 dark:text-gray-400">
+            Staying ahead in the legal field — one article at a time.
+          </p>
+        </div>
+
+        {/* Category filter chips */}
+        <div className="flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0 justify-start sm:justify-center gap-2.5 mb-10 pb-1 sm:pb-0">
+          {categories.map((cat) => {
+            const Icon = cat === "All" ? LayoutGrid : catIcon(cat);
+            const active = activeCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`flex-shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all duration-200 ${
+                  active
+                    ? "border-2 border-primary-600 text-primary-600 bg-white dark:bg-gray-900"
+                    : "border border-transparent text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+                }`}
               >
-                Read more <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
+                <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "text-primary-600" : "text-gray-500"}`} />
+                {cat}
+              </button>
+            );
+          })}
+        </div>
 
-            {heroPosts.length > 1 && (
-              <div className="absolute bottom-6 right-6 flex gap-2">
-                <button
-                  onClick={() => setHeroIndex((heroIndex - 1 + heroPosts.length) % heroPosts.length)}
-                  className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-100 transition-colors"
-                  aria-label="Previous featured post"
-                >
-                  <ArrowLeft className="w-4 h-4 text-gray-900" />
-                </button>
-                <button
-                  onClick={() => setHeroIndex((heroIndex + 1) % heroPosts.length)}
-                  className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-100 transition-colors"
-                  aria-label="Next featured post"
-                >
-                  <ArrowRight className="w-4 h-4 text-gray-900" />
-                </button>
-              </div>
-            )}
-          </motion.div>
-
-          {textRowPosts.length > 0 && (
-            <div className="grid sm:grid-cols-3 gap-8 mt-14">
-              {textRowPosts.map((post) => (
-                <div key={post.slug}>
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">{post.title}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{post.excerpt}</p>
-                  <div className="flex items-center gap-3 mb-3">
-                    <img src={post.authorImg} alt={post.author} className="w-8 h-8 rounded-full object-cover" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{post.author}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{post.date}</p>
-                    </div>
-                  </div>
-                  <Link href={`/blogs/${post.slug}`} className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
-                    Read More <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="grid lg:grid-cols-3 gap-10 mt-16">
-            <div className="lg:col-span-2 grid sm:grid-cols-2 gap-8">
-              {gridPosts.map((post, i) => (
+        {/* Grid */}
+        {filtered.length === 0 ? (
+          <p className="text-center text-gray-400 py-16">No posts found for this category.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {filtered.map((post, i) => {
+              const coverIdx = posts.findIndex((p) => p.slug === post.slug);
+              return (
                 <motion.div
                   key={post.slug}
                   initial={{ opacity: 0, y: 16 }}
@@ -130,80 +101,57 @@ export default function BlogCatalog({ posts }: { posts: BlogPost[] }) {
                   viewport={{ once: true }}
                   transition={{ delay: (i % 6) * 0.06, duration: 0.4 }}
                 >
-                  <div className={`rounded-2xl h-44 mb-4 ${coverClass(i + 1)}`} />
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">{post.category.toUpperCase()}</span>
-                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">{post.readTime}</span>
-                  </div>
-                  <h3 className="font-bold text-gray-900 dark:text-white mb-2">{post.title}</h3>
-                  <Link href={`/blogs/${post.slug}`} className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
-                    Read More <ArrowRight className="w-3.5 h-3.5" />
+                  <Link
+                    href={`/blogs/${post.slug}`}
+                    className="group block rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800 hover:shadow-lg hover:shadow-black/8 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300"
+                  >
+                    {/* Thumbnail */}
+                    <div className="relative overflow-hidden">
+                      {post.img ? (
+                        <img
+                          src={post.img}
+                          alt={post.title}
+                          className="w-full h-44 object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className={`w-full h-44 transition-transform duration-500 group-hover:scale-105 ${covers[coverIdx % covers.length]}`} />
+                      )}
+                      {/* Badges on image */}
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                        <span className="bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-semibold px-2.5 py-1 rounded-md shadow-sm">
+                          {post.category}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Body */}
+                    <div className="p-3.5 sm:p-4">
+                      <h3 className="font-bold text-gray-900 dark:text-white text-sm sm:text-[15px] leading-snug mb-2 line-clamp-2">
+                        {post.title}
+                      </h3>
+
+                      <p className="text-[11px] sm:text-xs text-gray-400 dark:text-gray-500 mb-2 sm:mb-3 flex items-center gap-1">
+                        <Clock className="w-3 h-3 flex-shrink-0" /> {post.readTime} &middot; {post.date}
+                      </p>
+
+                      <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3 sm:mb-4 leading-relaxed">
+                        {post.excerpt}
+                      </p>
+
+                      <div className="pt-2.5 sm:pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                        <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">{post.date}</span>
+                        <span className="bg-gray-900 dark:bg-gray-700 group-hover:bg-primary-600 dark:group-hover:bg-primary-600 text-white text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors duration-200 whitespace-nowrap">
+                          Read article
+                        </span>
+                      </div>
+                    </div>
                   </Link>
                 </motion.div>
-              ))}
-            </div>
-
-            <div className="lg:col-span-1 space-y-10">
-              <div>
-                <h4 className="font-bold text-gray-900 dark:text-white mb-4">Featured mentors</h4>
-                <ul className="space-y-3">
-                  {featuredMentors.map((mentor) => (
-                    <li key={mentor.name} className="flex items-center gap-3">
-                      <img src={mentor.img} alt={mentor.name} className="w-8 h-8 rounded-full object-cover" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{mentor.name}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-bold text-gray-900 dark:text-white mb-4">Tags</h4>
-                <div className="flex flex-wrap gap-2">
-                  {tags.map((tag) => (
-                    <span key={tag} className="text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-bold text-gray-900 dark:text-white mb-4">Our social media</h4>
-                <div className="flex gap-3">
-                  {[Instagram, Twitter, Mail, Linkedin].map((Icon, i) => (
-                    <a key={i} href="#" className="w-9 h-9 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-primary-600 hover:border-primary-200 transition-colors">
-                      <Icon className="w-4 h-4" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
-        </div>
-      </section>
-
-      <section className="pb-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary-600 via-black to-primary-900 min-h-[260px] flex items-center justify-center p-8">
-            <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full text-center">
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3">Be in touch with us</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                Get mentor tips, exam alerts, and new blog posts delivered straight to your inbox.
-              </p>
-              <form className="flex gap-2">
-                <input
-                  type="email"
-                  placeholder="Email"
-                  className="flex-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-primary-400"
-                />
-                <button type="submit" className="bg-primary-600 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-primary-700 transition-colors whitespace-nowrap">
-                  Submit
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </section>
-    </>
+        )}
+      </div>
+    </section>
   );
 }

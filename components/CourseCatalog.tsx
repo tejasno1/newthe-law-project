@@ -6,17 +6,26 @@ import Link from "next/link";
 import {
   ArrowRight, Star,
   LayoutGrid, GraduationCap, BookOpen, Scale, FileText,
-  ChevronDown, Check,
+  ChevronDown, Check, ClipboardList, Award, Briefcase, Globe, Users,
 } from "lucide-react";
 import type { Course } from "@/lib/courses";
 
-const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  "All Courses": LayoutGrid,
-  "CLAT UG": GraduationCap,
-  "CLAT PG": BookOpen,
-  "Judiciary": Scale,
-  "NLSAT": FileText,
+const ICON_MAP: Record<string, React.ElementType> = {
+  "LayoutGrid": LayoutGrid,
+  "GraduationCap": GraduationCap,
+  "BookOpen": BookOpen,
+  "Scale": Scale,
+  "FileText": FileText,
+  "ClipboardList": ClipboardList,
+  "Award": Award,
+  "Briefcase": Briefcase,
+  "Globe": Globe,
+  "Users": Users,
 };
+
+function resolveIcon(name: string): React.ElementType {
+  return ICON_MAP[name] ?? BookOpen;
+}
 
 const ACCESS_OPTIONS = [
   { value: "all",               label: "All Plans" },
@@ -25,13 +34,6 @@ const ACCESS_OPTIONS = [
   { value: "one_time_purchase", label: "One Time Purchase" },
 ];
 
-const floatingTags = [
-  { label: "ADVOCATE", img: "https://picsum.photos/seed/float1/200/260" },
-  { label: "MENTOR",   img: "https://picsum.photos/seed/float2/200/260" },
-  { label: "JUSTICE",  img: "https://picsum.photos/seed/float3/200/260" },
-  { label: "CAREER",   img: "https://picsum.photos/seed/float4/200/260" },
-  { label: "GROWTH",   img: "https://picsum.photos/seed/float5/200/260" },
-];
 
 function PlanDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -87,13 +89,37 @@ function PlanDropdown({ value, onChange }: { value: string; onChange: (v: string
   );
 }
 
-const CourseHero = ({ courses }: { courses: Course[] }) => {
+interface OrderedCategory {
+  name: string;
+  icon_name: string;
+}
+
+const CourseHero = ({
+  courses,
+  orderedCategories = [],
+}: {
+  courses: Course[];
+  orderedCategories?: OrderedCategory[];
+}) => {
   const [activeCategory, setActiveCategory] = useState("All Courses");
   const [activePlan, setActivePlan] = useState("all");
 
+  // Build category list: use DB order when available, fall back to alphabetical
+  const courseCatNames = new Set(courses.map((c) => c.category).filter(Boolean) as string[]);
+
+  const ordered = orderedCategories
+    .filter((cat) => courseCatNames.has(cat.name))
+    .map((cat) => ({ name: cat.name, iconName: cat.icon_name }));
+
+  const unmatched = Array.from(courseCatNames)
+    .filter((n) => !orderedCategories.some((c) => c.name === n))
+    .sort()
+    .map((n) => ({ name: n, iconName: "BookOpen" }));
+
   const categories = [
-    "All Courses",
-    ...Array.from(new Set(courses.map((c) => c.category).filter(Boolean))).sort(),
+    { name: "All Courses", iconName: "LayoutGrid" },
+    ...ordered,
+    ...unmatched,
   ];
 
   const filteredCourses = courses.filter((c) => {
@@ -102,36 +128,38 @@ const CourseHero = ({ courses }: { courses: Course[] }) => {
     return catMatch && planMatch;
   });
 
+  const activeCatName = activeCategory;
+
   return (
-    <section className="bg-white dark:bg-gray-900 pt-24 sm:pt-28 pb-20">
+    <section className="bg-white dark:bg-gray-900 pt-28 sm:pt-28 pb-12 sm:pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-            Explore All Courses &amp; <span className="text-gradient">Learning Paths</span>
+        <div className="text-center max-w-2xl mx-auto mt-6 sm:mt-0 mb-6 sm:mb-10">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+            Explore all courses &amp;<br className="sm:hidden" /> <span className="text-gradient">learning paths</span>
           </h1>
-          <p className="text-gray-500">
-            <span className="text-gray-500 dark:text-gray-400">Discover practical, career-focused legal courses carefully built to help you crack exams, land internships, and build real skills.</span>
+          <p className="text-xs sm:text-base text-gray-500 dark:text-gray-400">
+            Discover practical, career-focused legal courses carefully built to help you crack exams, land internships, and build real skills.
           </p>
         </div>
 
         {/* Category chips */}
-        <div className="flex flex-wrap justify-center gap-2.5 mb-5">
-          {categories.map((cat) => {
-            const Icon = CATEGORY_ICONS[cat] ?? BookOpen;
-            const active = activeCategory === cat;
+        <div className="flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0 justify-start sm:justify-center gap-2.5 mb-5 pb-1 sm:pb-0">
+          {categories.map(({ name, iconName }) => {
+            const Icon = resolveIcon(iconName);
+            const active = activeCatName === name;
             return (
               <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-all duration-200 ${
+                key={name}
+                onClick={() => setActiveCategory(name)}
+                className={`flex-shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all duration-200 ${
                   active
                     ? "border-2 border-primary-600 text-primary-600 bg-white"
                     : "border border-transparent text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
                 }`}
               >
                 <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "text-primary-600" : "text-gray-500"}`} />
-                {cat}
+                {name}
               </button>
             );
           })}
@@ -166,7 +194,7 @@ const CourseHero = ({ courses }: { courses: Course[] }) => {
                       alt={course.title}
                       className="w-full h-44 object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5">
                       {course.deliveryType && (
                         <span className="bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-semibold px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1.5">
                           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${course.deliveryType === "online" ? "bg-green-500" : "bg-gray-400"}`} />
@@ -213,46 +241,15 @@ const CourseHero = ({ courses }: { courses: Course[] }) => {
   );
 };
 
-const UpgradeCTA = () => (
-  <section className="relative bg-gray-50 dark:bg-gray-800 py-24 overflow-hidden">
-    <div className="absolute inset-0 bg-grid-faint [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]" />
 
-    <div className="relative max-w-4xl mx-auto px-4 text-center mb-16">
-      <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-6">
-        Upgrade your skills, <span className="text-gradient">unlock your potential</span>
-      </h2>
-      <button className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded-full font-medium hover:bg-gray-800 transition-colors">
-        Explore our courses <ArrowRight className="w-4 h-4" />
-      </button>
-    </div>
-
-    <div className="relative flex flex-wrap justify-center items-end gap-4 sm:gap-6 max-w-5xl mx-auto px-4">
-      {floatingTags.map((item, i) => (
-        <motion.div
-          key={item.label}
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: i * 0.08, duration: 0.5 }}
-          className="relative w-28 sm:w-36 h-36 sm:h-44 rounded-2xl overflow-hidden shadow-lg"
-          style={{ marginBottom: i % 2 === 0 ? "0px" : "28px" }}
-        >
-          <img src={item.img} alt={item.label} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-          <span className="absolute bottom-3 left-3 right-3 text-white text-xs font-bold tracking-wide bg-black/60 px-2 py-1 rounded-md text-center">
-            {item.label}
-          </span>
-        </motion.div>
-      ))}
-    </div>
-  </section>
-);
-
-export default function CourseCatalog({ courses }: { courses: Course[] }) {
+export default function CourseCatalog({
+  courses,
+  orderedCategories = [],
+}: {
+  courses: Course[];
+  orderedCategories?: OrderedCategory[];
+}) {
   return (
-    <>
-      <CourseHero courses={courses} />
-      <UpgradeCTA />
-    </>
+    <CourseHero courses={courses} orderedCategories={orderedCategories} />
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { GraduationCap, Instagram, Twitter, Youtube, Mail } from "lucide-react";
+import { Instagram, Twitter, Youtube, Mail } from "lucide-react";
 
 const brandName = "The Law Project";
 
@@ -16,7 +16,7 @@ const navLinks = [
   { label: "Courses", href: "/course" },
   { label: "About Us", href: "/about" },
   { label: "Blogs", href: "/blogs" },
-  { label: "Mock Test", href: "/mock-test" },
+  { label: "Practice Test", href: "/mock-test" },
   { label: "FAQs", href: "/#faqs" },
   { label: "Terms & Conditions", href: "/terms" },
   { label: "Refund Policy", href: "/refund" },
@@ -31,10 +31,10 @@ export default function Footer() {
             <div className="w-full flex flex-col items-center">
               <div className="space-y-2 flex flex-col items-center flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-white text-3xl font-bold">{brandName}</span>
+                  <span className="text-white text-xl sm:text-3xl font-bold">{brandName}</span>
                 </div>
                 <p className="text-gray-400 font-semibold text-center w-full max-w-sm sm:w-96 px-4 sm:px-0">
-                  Mentor-led legal education for CLAT PG, internships, and courtroom-ready skills.
+                  Premier Mentorship for Legal Excellence and Professional Success.
                 </p>
               </div>
 
@@ -71,21 +71,21 @@ export default function Footer() {
 
           <div className="mt-20 md:mt-24 flex flex-col gap-2 md:gap-1 items-center justify-center md:flex-row md:items-center md:justify-between px-4 md:px-0">
             <p className="text-base text-gray-500 text-center md:text-left">
-              ©{new Date().getFullYear()} {brandName}. All rights reserved.
+              ©<span suppressHydrationWarning>{new Date().getFullYear()}</span> {brandName}. All rights reserved.
             </p>
           </div>
         </div>
 
         <div
-          className="bg-gradient-to-b from-white/10 via-white/5 to-transparent bg-clip-text text-transparent leading-none absolute left-1/2 -translate-x-1/2 bottom-40 md:bottom-32 font-extrabold tracking-tighter pointer-events-none select-none text-center px-4"
+          className="bg-gradient-to-b from-white/10 via-white/8 to-white/[0.07] bg-clip-text text-transparent leading-none absolute left-1/2 -translate-x-1/2 bottom-40 md:bottom-32 font-extrabold tracking-tighter pointer-events-none select-none text-center px-4"
           style={{ fontSize: "clamp(3rem, 12vw, 10rem)", maxWidth: "95vw" }}
         >
           {brandName.toUpperCase()}
         </div>
 
         <div className="absolute hover:border-white duration-400 drop-shadow-[0_0px_20px_rgba(255,255,255,0.15)] bottom-24 md:bottom-20 backdrop-blur-sm rounded-3xl bg-white/5 left-1/2 border-2 border-white/10 flex items-center justify-center p-3 -translate-x-1/2 z-10">
-          <div className="w-12 sm:w-16 md:w-24 h-12 sm:h-16 md:h-24 bg-gradient-to-br from-white to-gray-300 rounded-2xl flex items-center justify-center shadow-lg">
-            <GraduationCap className="w-8 sm:w-10 md:w-14 h-8 sm:h-10 md:h-14 text-black drop-shadow-lg" />
+          <div className="w-12 sm:w-16 md:w-24 h-12 sm:h-16 md:h-24 bg-white rounded-2xl flex items-center justify-center shadow-lg p-2">
+            <img src="/lightmodelogotlp.png" alt="The Law Project" className="w-full h-full object-contain" />
           </div>
         </div>
 

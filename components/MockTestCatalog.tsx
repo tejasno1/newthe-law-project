@@ -74,7 +74,7 @@ export default function MockTestCatalog({ tests }: { tests: MockTestSafe[] }) {
   };
 
   if (tests.length === 0) {
-    return <p className="text-center text-gray-400">No mock tests found yet.</p>;
+    return <p className="text-center text-gray-400">No practice tests found yet.</p>;
   }
 
   const categories = ["All", ...Array.from(new Set(tests.map((t) => t.category)))];
@@ -95,7 +95,7 @@ export default function MockTestCatalog({ tests }: { tests: MockTestSafe[] }) {
       </div>
 
       {filteredTests.length === 0 ? (
-        <p className="text-center text-gray-400">No mock tests found in this category yet.</p>
+        <p className="text-center text-gray-400">No practice tests found in this category yet.</p>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredTests.map((test, i) => {
@@ -183,7 +183,7 @@ export default function MockTestCatalog({ tests }: { tests: MockTestSafe[] }) {
 
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Login to start test</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-                You need to be signed in to attempt a mock test. It only takes a moment.
+                You need to be signed in to attempt a practice test. It only takes a moment.
               </p>
 
               <div className="space-y-3">

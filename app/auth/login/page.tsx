@@ -116,7 +116,7 @@ function LoginForm() {
 
             <div className="text-center relative">
               <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-white/80">
-                Welcome Back
+                Welcome back
               </h2>
               <p className="mt-1 text-xs text-white/50">Sign in to continue learning</p>
             </div>

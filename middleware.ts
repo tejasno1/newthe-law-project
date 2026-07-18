@@ -2,6 +2,20 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Admin routes: protected by a simple password cookie (no Supabase Auth needed)
+  if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
+    const adminCookie = request.cookies.get("tlp_admin")?.value;
+    const adminSecret = process.env.ADMIN_SECRET;
+
+    if (!adminSecret || adminCookie !== adminSecret) {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
+    return NextResponse.next();
+  }
+
+  // All other matched routes: run Supabase session refresh
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -29,9 +43,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
-
-  // Redirect authenticated users away from auth pages
   const authPages = ["/auth/login", "/auth/signup", "/login", "/signup", "/forgot-password"];
   if (user && authPages.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
     return NextResponse.redirect(new URL("/", request.url));
@@ -41,5 +52,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/auth/login", "/auth/signup", "/login", "/signup", "/forgot-password"],
+  matcher: [
+    "/auth/login", "/auth/signup", "/login", "/signup", "/forgot-password",
+    "/admin/:path*",
+  ],
 };

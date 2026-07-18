@@ -7,6 +7,7 @@ import { Clock, FileQuestion, Award, LogIn, X } from "lucide-react";
 import type { MockTestSafe } from "@/lib/mockTests";
 import ExamInstructionsContent from "@/components/ExamInstructionsContent";
 import { createClient } from "@/lib/supabase/client";
+import { trackMcqEvent } from "@/lib/mcqTracking";
 
 function getDisplayName(email: string, metadata: Record<string, string>): string {
   if (metadata?.full_name) return metadata.full_name;
@@ -29,6 +30,10 @@ export default function MockTestInstructions({ test }: { test: MockTestSafe }) {
     const params = new URLSearchParams(window.location.search);
     setIsExamMode(params.get("mode") === "exam");
   }, []);
+
+  useEffect(() => {
+    trackMcqEvent(test.slug, "test_view");
+  }, [test.slug]);
 
   useEffect(() => {
     const saved = localStorage.getItem("mockTestTextSize");
