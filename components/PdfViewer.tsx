@@ -52,17 +52,27 @@ export default function PdfViewer({ title, path, candidateName, onClose }: Props
 
           await page.render({ canvasContext: ctx, viewport: vp, canvas }).promise;
 
-          // Tiled diagonal watermark
+          // Tiled diagonal watermark — spaced based on actual text size to prevent overlap
           ctx.save();
-          ctx.globalAlpha = 0.07;
-          const fontSize = Math.max(14, Math.floor(vp.width / 20));
+          ctx.globalAlpha = 0.10;
+          const fontSize = Math.max(11, Math.floor(vp.width / 30));
           ctx.font = `bold ${fontSize}px sans-serif`;
           ctx.fillStyle = "#cc0000";
-          for (let y = 0; y < vp.height + 300; y += 160) {
-            for (let x = -300; x < vp.width + 300; x += 320) {
+
+          const tw = ctx.measureText(wm).width;
+          const angle = -Math.PI / 6;
+          const cosA = Math.abs(Math.cos(angle));
+          const sinA = Math.abs(Math.sin(angle));
+          // rotated bounding box + 70px gap on each axis
+          const stepX = tw * cosA + fontSize * sinA + 70;
+          const stepY = tw * sinA + fontSize * cosA + 70;
+
+          for (let row = 0, y = -stepY; y < vp.height + stepY; y += stepY, row++) {
+            const offsetX = (row % 2) * (stepX / 2); // stagger alternate rows
+            for (let x = -stepX + offsetX; x < vp.width + stepX; x += stepX) {
               ctx.save();
               ctx.translate(x, y);
-              ctx.rotate(-Math.PI / 6);
+              ctx.rotate(angle);
               ctx.fillText(wm, 0, 0);
               ctx.restore();
             }
