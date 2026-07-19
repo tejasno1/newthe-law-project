@@ -6,7 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
-import { LogOut, Sun, Moon, User, BarChart3 } from "lucide-react";
+import { LogOut, Sun, Moon, User } from "lucide-react";
 import { MovingBorderButton } from "@/components/ui/moving-border";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -142,14 +142,8 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* Dashboard + Logout */}
-                        <div className="px-4 py-3 space-y-2">
-                          <Link href="/dashboard" onClick={() => setProfileOpen(false)}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary-600/10 hover:bg-primary-600/20 text-primary-400 text-sm font-medium transition-all duration-200"
-                          >
-                            <BarChart3 className="w-4 h-4" />
-                            My Dashboard
-                          </Link>
+                        {/* Logout */}
+                        <div className="px-4 py-3">
                           <button onClick={handleLogout}
                             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 text-sm font-medium transition-all duration-200"
                           >
