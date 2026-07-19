@@ -178,14 +178,14 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
 
             {isEnrolled ? (
               <a href={`/course/${course.slug}/learn`}
-                className="w-full bg-emerald-600 text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-4 h-4" /> Continue Learning
+                className="w-full bg-primary-600 text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2">
+                Start Learning
               </a>
             ) : (
               <button
                 onClick={handleEnroll}
                 disabled={paying || !enrollChecked}
-                className="w-full bg-black text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-black text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {paySuccess ? "✓ Payment Successful! Redirecting…" : paying ? "Processing…" : "Enroll now"}
               </button>
@@ -290,14 +290,14 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
               </ul>
               {isEnrolled ? (
                 <a href={`/course/${course.slug}/learn`}
-                  className="w-full bg-emerald-600 text-white rounded-xl py-2.5 text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" /> Continue Learning
+                  className="w-full bg-primary-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2">
+                  Start Learning
                 </a>
               ) : (
                 <button
                   onClick={handleEnroll}
                   disabled={paying || !enrollChecked}
-                  className="w-full bg-primary-600 text-white rounded-xl py-2.5 text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full bg-primary-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {paySuccess ? "✓ Redirecting…" : paying ? "Processing…" : <> Enroll now <ArrowRight className="w-4 h-4" /> </>}
                 </button>

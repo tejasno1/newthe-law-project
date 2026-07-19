@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
@@ -103,6 +103,17 @@ const CourseHero = ({
 }) => {
   const [activeCategory, setActiveCategory] = useState("All Courses");
   const [activePlan, setActivePlan] = useState("all");
+  const [enrolledSlugs, setEnrolledSlugs] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    fetch("/api/enrollments")
+      .then(r => r.json())
+      .then(({ enrollments }) => {
+        if (Array.isArray(enrollments))
+          setEnrolledSlugs(new Set(enrollments.map((e: { course_slug: string }) => e.course_slug)));
+      })
+      .catch(() => {});
+  }, []);
 
   // Build category list: use DB order when available, fall back to alphabetical
   const courseCatNames = new Set(courses.map((c) => c.category).filter(Boolean) as string[]);
@@ -226,9 +237,15 @@ const CourseHero = ({
                         <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                         {course.rating}
                       </div>
-                      <span className="ml-auto bg-gray-900 dark:bg-gray-700 hover:bg-primary-600 dark:hover:bg-primary-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors duration-200 whitespace-nowrap">
-                        View course
-                      </span>
+                      {enrolledSlugs.has(course.slug) ? (
+                        <span className="ml-auto bg-primary-600 text-white text-xs font-semibold px-3 py-1.5 rounded-md transition-colors duration-200 whitespace-nowrap">
+                          Start Learning
+                        </span>
+                      ) : (
+                        <span className="ml-auto bg-gray-900 dark:bg-gray-700 hover:bg-primary-600 dark:hover:bg-primary-600 text-white text-xs font-semibold px-3 py-1.5 rounded-md transition-colors duration-200 whitespace-nowrap">
+                          Enroll Now
+                        </span>
+                      )}
                     </div>
                   </div>
                 </Link>
