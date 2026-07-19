@@ -32,9 +32,11 @@ function LoginForm() {
   const redirectTo = searchParams.get("redirect") || "/";
   const supabase = createClient();
 
-  const [step, setStep] = useState<"email" | "sent">("email");
+  const [step, setStep] = useState<"email" | "otp">("email");
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [countdown, setCountdown] = useState(0);
@@ -79,8 +81,25 @@ function LoginForm() {
       setError(friendlyError(error.message || error.code || JSON.stringify(error)));
       return;
     }
-    setStep("sent");
+    setCode("");
+    setStep("otp");
     startCountdown();
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setError("");
+    setVerifying(true);
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: code.trim(),
+      type: "email",
+    });
+    setVerifying(false);
+    if (error) { setError("Incorrect or expired code. Please try again."); return; }
+    router.push(redirectTo);
+    router.refresh();
   };
 
   const handleResend = async () => {
@@ -181,51 +200,54 @@ function LoginForm() {
               <motion.div key="otp-step" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }} className="p-8 space-y-5 relative">
 
-                {/* success icon */}
                 <div className="text-center">
                   <div className="w-14 h-14 bg-emerald-500/20 border border-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <svg className="w-7 h-7 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <h2 className="text-xl font-bold text-white">Check your email</h2>
-                  <p className="mt-1 text-xs text-white/50">We sent a sign-in link to</p>
-                  <p className="mt-1 text-sm font-semibold text-white bg-white/5 border border-white/10 rounded-xl px-4 py-2 break-all">{email}</p>
+                  <h2 className="text-xl font-bold text-white">Enter verification code</h2>
+                  <p className="mt-1 text-xs text-white/50">We sent a code to</p>
+                  <p className="mt-1 text-sm font-semibold text-white/80">{email}</p>
                 </div>
 
-                {/* steps */}
-                <div className="space-y-2">
-                  {[
-                    { n: "1", text: "Open your Gmail / email app" },
-                    { n: "2", text: 'Find the email from "Supabase Auth"' },
-                    { n: "3", text: 'Click the "Sign in" link' },
-                    { n: "4", text: "You'll be logged in automatically" },
-                  ].map(s => (
-                    <div key={s.n} className="flex items-center gap-3 bg-white/4 rounded-xl px-4 py-2.5">
-                      <span className="w-6 h-6 bg-primary-600 rounded-full text-white text-xs font-bold flex items-center justify-center flex-shrink-0">{s.n}</span>
-                      <p className="text-sm text-white/70">{s.text}</p>
+                <form onSubmit={handleVerify} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1.5 text-center">Verification code</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      required
+                      autoFocus
+                      placeholder="e.g. 07040239"
+                      value={code}
+                      onChange={e => setCode(e.target.value.replace(/\D/g, ""))}
+                      className="w-full bg-white/5 border border-white/10 focus:border-primary-400 focus:bg-white/8 rounded-xl px-4 py-3 text-2xl font-bold text-white text-center tracking-[0.3em] placeholder:text-white/15 placeholder:text-base placeholder:tracking-normal outline-none transition-all duration-200"
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-500/20 border border-red-400/30 rounded-xl px-4 py-3 text-sm text-red-200 text-center">{error}</div>
+                  )}
+
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                    type="submit" disabled={verifying || !code.trim()} className="group w-full relative">
+                    <div className="absolute inset-0 bg-primary-500/30 rounded-xl blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="relative w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 rounded-xl text-white font-semibold transition-all duration-300">
+                      {verifying
+                        ? <><div className="w-4 h-4 border-2 border-white/70 border-t-transparent rounded-full animate-spin" /> Verifying…</>
+                        : <> Verify & Sign in <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /> </>}
                     </div>
-                  ))}
-                </div>
-
-                <div className="bg-amber-400/8 border border-amber-400/20 rounded-xl px-4 py-3 flex items-start gap-2.5">
-                  <svg className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                  </svg>
-                  <p className="text-xs text-amber-300/80 leading-relaxed">Link expires in 10 minutes. Check your spam folder if you don't see it.</p>
-                </div>
-
-                {error && (
-                  <div className="bg-red-500/20 border border-red-400/30 rounded-xl px-4 py-3 text-sm text-red-200 text-center">{error}</div>
-                )}
+                  </motion.button>
+                </form>
 
                 <div className="text-center space-y-2 pt-1">
                   <button type="button" onClick={handleResend} disabled={countdown > 0}
                     className="flex items-center justify-center gap-1.5 mx-auto text-xs text-white/40 hover:text-white/70 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                     <RotateCcw className="w-3 h-3" />
-                    {countdown > 0 ? `Resend in ${countdown}s` : "Resend link"}
+                    {countdown > 0 ? `Resend code in ${countdown}s` : "Resend code"}
                   </button>
-                  <button type="button" onClick={() => { setStep("email"); setError(""); }}
+                  <button type="button" onClick={() => { setStep("email"); setError(""); setCode(""); }}
                     className="block mx-auto text-xs text-white/30 hover:text-white/60 transition-colors">
                     ← Use a different email
                   </button>
