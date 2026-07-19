@@ -79,7 +79,6 @@ export default function Navbar() {
   const { theme, toggle } = useTheme();
 
   const loginHref = `/auth/login?redirect=${encodeURIComponent(pathname)}`;
-  const signupHref = `/auth/signup?redirect=${encodeURIComponent(pathname)}`;
 
   return (
     <nav className={`fixed top-0 inset-x-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-sm transition-transform duration-300 ${hidden ? "-translate-y-full" : "translate-y-0"}`}>
@@ -157,18 +156,11 @@ export default function Navbar() {
                   </AnimatePresence>
                 </div>
               ) : (
-                <>
-                  <Link href={loginHref}
-                    className="border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors whitespace-nowrap"
-                  >
-                    Login
-                  </Link>
-                  <Link href={signupHref}
+                <Link href={loginHref}
                     className="bg-primary-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-700 transition-colors whitespace-nowrap"
                   >
-                    Sign Up
+                    Sign In
                   </Link>
-                </>
               )
             )}
           </div>
