@@ -38,6 +38,8 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
   const [openModules, setOpenModules] = useState<Set<number>>(new Set([0]));
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrollChecked, setEnrollChecked] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [paying, setPaying] = useState(false);
   const [paySuccess, setPaySuccess] = useState(false);
@@ -46,12 +48,25 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => setIsLoggedIn(!!user));
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      setIsLoggedIn(!!user);
+      if (user) {
+        // Check enrollment for this course
+        const res = await fetch("/api/enrollments");
+        const { enrollments } = await res.json();
+        const enrolled = (enrollments ?? []).some(
+          (e: { course_slug: string }) => e.course_slug === course.slug
+        );
+        setIsEnrolled(enrolled);
+      }
+      setEnrollChecked(true);
+    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setIsLoggedIn(!!session?.user);
+      if (!session?.user) { setIsEnrolled(false); setEnrollChecked(true); }
     });
     return () => subscription.unsubscribe();
-  }, []);
+  }, [course.slug]);
 
   const handleEnroll = async () => {
     trackEvent(course.slug, "enroll_click");
@@ -67,6 +82,7 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ courseSlug: course.slug, paymentStatus: "free" }),
       });
+      setIsEnrolled(true);
       window.location.href = `/course/${course.slug}/learn`;
       return;
     }
@@ -78,8 +94,8 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
       onSuccess: async (paymentId) => {
         setPaying(false);
         setPaySuccess(true);
+        setIsEnrolled(true);
         trackEvent(course.slug, "payment_success");
-        // Record paid enrollment
         await fetch("/api/enrollments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -160,13 +176,20 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
               <span className="text-sm sm:text-lg text-gray-400 line-through">₹{course.oldPrice}</span>
             </div>
 
-            <button
-              onClick={handleEnroll}
-              disabled={paying}
-              className="w-full bg-black text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {paySuccess ? "✓ Payment Successful! Redirecting…" : paying ? "Processing…" : "Enroll now"}
-            </button>
+            {isEnrolled ? (
+              <a href={`/course/${course.slug}/learn`}
+                className="w-full bg-emerald-600 text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> Continue Learning
+              </a>
+            ) : (
+              <button
+                onClick={handleEnroll}
+                disabled={paying || !enrollChecked}
+                className="w-full bg-black text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {paySuccess ? "✓ Payment Successful! Redirecting…" : paying ? "Processing…" : "Enroll now"}
+              </button>
+            )}
           </motion.div>
         </div>
       </section>
@@ -265,13 +288,20 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
                   </li>
                 ))}
               </ul>
-              <button
-                onClick={handleEnroll}
-                disabled={paying}
-                className="w-full bg-primary-600 text-white rounded-xl py-2.5 text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {paySuccess ? "✓ Redirecting…" : paying ? "Processing…" : <> Enroll now <ArrowRight className="w-4 h-4" /> </>}
-              </button>
+              {isEnrolled ? (
+                <a href={`/course/${course.slug}/learn`}
+                  className="w-full bg-emerald-600 text-white rounded-xl py-2.5 text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" /> Continue Learning
+                </a>
+              ) : (
+                <button
+                  onClick={handleEnroll}
+                  disabled={paying || !enrollChecked}
+                  className="w-full bg-primary-600 text-white rounded-xl py-2.5 text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {paySuccess ? "✓ Redirecting…" : paying ? "Processing…" : <> Enroll now <ArrowRight className="w-4 h-4" /> </>}
+                </button>
+              )}
             </div>
           </div>
         </div>
