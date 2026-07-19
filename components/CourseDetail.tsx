@@ -61,6 +61,12 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
     }
     const priceRupees = parseRupees(course.price);
     if (!priceRupees || priceRupees <= 0) {
+      // Free course — record enrollment then redirect
+      await fetch("/api/enrollments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseSlug: course.slug, paymentStatus: "free" }),
+      });
       window.location.href = `/course/${course.slug}/learn`;
       return;
     }
@@ -69,10 +75,16 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
       amountRupees: priceRupees,
       name: "The Law Project",
       description: course.title,
-      onSuccess: (paymentId) => {
+      onSuccess: async (paymentId) => {
         setPaying(false);
         setPaySuccess(true);
         trackEvent(course.slug, "payment_success");
+        // Record paid enrollment
+        await fetch("/api/enrollments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ courseSlug: course.slug, paymentStatus: "paid" }),
+        });
         setTimeout(() => { window.location.href = `/course/${course.slug}/learn`; }, 1800);
       },
       onFailure: () => setPaying(false),

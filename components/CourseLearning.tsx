@@ -117,6 +117,37 @@ export default function CourseLearning({
 
   const [saved, setSaved] = useState<Set<number>>(new Set());
 
+  // Lesson completion — keyed by "moduleIndex-lessonIndex"
+  const [completed, setCompleted] = useState<Set<string>>(new Set());
+  const [markingDone, setMarkingDone] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/lesson-progress?courseSlug=${course.slug}`)
+      .then(r => r.json())
+      .then(({ completed: rows }) => {
+        if (Array.isArray(rows)) {
+          setCompleted(new Set(rows.map((r: { module_index: number; lesson_index: number }) => `${r.module_index}-${r.lesson_index}`)));
+        }
+      })
+      .catch(() => {});
+  }, [course.slug]);
+
+  const currentLesson = lessons[currentIndex];
+  const currentKey = currentLesson ? `${currentLesson.moduleIndex}-${currentLesson.lessonIndex}` : "";
+  const isCurrentDone = completed.has(currentKey);
+
+  const markComplete = async () => {
+    if (!currentLesson || isCurrentDone || markingDone) return;
+    setMarkingDone(true);
+    await fetch("/api/lesson-progress", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseSlug: course.slug, moduleIndex: currentLesson.moduleIndex, lessonIndex: currentLesson.lessonIndex }),
+    }).catch(() => {});
+    setCompleted(prev => new Set(prev).add(currentKey));
+    setMarkingDone(false);
+  };
+
   // Watermark: random position that shifts every 5 s, only on video lessons
   const [wmPos, setWmPos] = useState({ top: 15, left: 15 });
   useEffect(() => {
@@ -269,7 +300,7 @@ export default function CourseLearning({
           </nav>
         </div>
 
-        {/* Desktop prev/next only */}
+        {/* Desktop prev/next + mark complete */}
         <div className="hidden sm:flex items-center gap-2">
           <button
             onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
@@ -277,6 +308,18 @@ export default function CourseLearning({
             className="flex items-center gap-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-3.5 h-3.5" /> Prev
+          </button>
+          <button
+            onClick={markComplete}
+            disabled={isCurrentDone || markingDone}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              isCurrentDone
+                ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                : "bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-60"
+            }`}
+          >
+            <Check className="w-3.5 h-3.5" />
+            {isCurrentDone ? "Completed" : markingDone ? "Saving…" : "Mark Complete"}
           </button>
           <button
             onClick={() => setCurrentIndex((i) => Math.min(lessons.length - 1, i + 1))}
@@ -301,15 +344,15 @@ export default function CourseLearning({
           {/* Progress pill */}
           <div className="px-4 py-3 border-b border-gray-50 flex-shrink-0">
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
-              <span>{currentIndex + 1} / {lessons.length} lessons</span>
+              <span>{completed.size} / {lessons.length} completed</span>
               <span className="font-medium text-primary-600">
-                {Math.round(((currentIndex + 1) / lessons.length) * 100)}%
+                {Math.round((completed.size / lessons.length) * 100)}%
               </span>
             </div>
             <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-primary-600 rounded-full transition-all duration-300"
-                style={{ width: `${((currentIndex + 1) / lessons.length) * 100}%` }}
+                className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                style={{ width: `${(completed.size / lessons.length) * 100}%` }}
               />
             </div>
           </div>
@@ -325,7 +368,7 @@ export default function CourseLearning({
                   </p>
                   {moduleLessons.map((lesson) => {
                     const isActive = lesson.globalIndex === currentIndex;
-                    const isDone = lesson.globalIndex < currentIndex;
+                    const isDone = completed.has(`${lesson.moduleIndex}-${lesson.lessonIndex}`);
                     return (
                       <button
                         key={lesson.globalIndex}
@@ -877,20 +920,32 @@ export default function CourseLearning({
       </div>
 
       {/* ── Fixed bottom nav — mobile only ─────────────────── */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex gap-3 z-30">
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex gap-2 z-30">
         <button
           onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
           disabled={!canPrev}
-          className="flex-1 flex items-center justify-center gap-1.5 border border-gray-200 rounded-xl py-2.5 text-sm font-medium text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center justify-center gap-1.5 border border-gray-200 rounded-xl py-2.5 px-3 text-sm font-medium text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          <ChevronLeft className="w-4 h-4" /> Previous
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <button
+          onClick={markComplete}
+          disabled={isCurrentDone || markingDone}
+          className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-medium transition-colors ${
+            isCurrentDone
+              ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+              : "bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-60"
+          }`}
+        >
+          <Check className="w-4 h-4" />
+          {isCurrentDone ? "Completed" : markingDone ? "Saving…" : "Mark Complete"}
         </button>
         <button
           onClick={() => setCurrentIndex((i) => Math.min(lessons.length - 1, i + 1))}
           disabled={!canNext}
-          className="flex-1 flex items-center justify-center gap-1.5 bg-primary-600 text-white rounded-xl py-2.5 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center justify-center gap-1.5 bg-primary-600 text-white rounded-xl py-2.5 px-3 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          Next <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
     </div>
