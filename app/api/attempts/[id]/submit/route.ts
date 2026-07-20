@@ -17,20 +17,20 @@ export async function POST(
     testSlug?: string; // passed by client to allow parallel fetching
   };
 
-  // ── Batch 1: auth + attempt + test all in parallel ─────────────────────────
+  const correctAnswerToIndex = (a: string) => ({ A: 0, B: 1, C: 2, D: 3 }[a?.toUpperCase()] ?? 0);
+
+  // ── Batch 1: auth + attempt + test metadata all in parallel ────────────────
   const [
     { data: { user } },
     { data: attempt },
-    { data: test },
+    { data: testMeta },
   ] = await Promise.all([
     supabase.auth.getUser(),
     supabaseService.from("test_attempts").select("*").eq("id", params.id).single(),
-    // Fetch test using the slug the client provided; we verify it matches the
-    // attempt's test_slug after we have the attempt data.
     body.testSlug
       ? supabaseService
           .from("mock_tests")
-          .select("questions, total_marks, marks_per_correct, negative_mark")
+          .select("slug, total_marks, marks_per_correct, negative_mark")
           .eq("slug", body.testSlug)
           .single()
       : Promise.resolve({ data: null, error: null }),
@@ -42,32 +42,40 @@ export async function POST(
   if (attempt.status !== "in_progress")
     return NextResponse.json({ error: "Already submitted", alreadyStatus: attempt.status }, { status: 409 });
 
-  // If client sent the wrong slug (or no slug), fall back to a direct fetch
-  const finalTest =
-    test && body.testSlug === attempt.test_slug
-      ? test
+  const testSlug = attempt.test_slug as string;
+
+  // If client sent wrong slug, fetch meta separately
+  const finalTestMeta =
+    testMeta && body.testSlug === testSlug
+      ? testMeta
       : await supabaseService
           .from("mock_tests")
-          .select("questions, total_marks, marks_per_correct, negative_mark")
-          .eq("slug", attempt.test_slug)
+          .select("slug, total_marks, marks_per_correct, negative_mark")
+          .eq("slug", testSlug)
           .single()
           .then((r) => r.data);
 
-  if (!finalTest) return NextResponse.json({ error: "Test not found" }, { status: 404 });
+  if (!finalTestMeta) return NextResponse.json({ error: "Test not found" }, { status: 404 });
+
+  // Fetch questions from the dedicated table
+  const { data: questionRows } = await supabaseService
+    .from("mock_test_questions")
+    .select("question_number, correct_answer")
+    .eq("test_slug", testSlug)
+    .order("question_number", { ascending: true });
 
   // ── Score server-side — correctIndex never leaves this function ────────────
-  const questions = finalTest.questions as Array<{
-    id: number;
-    correctIndex?: number;
-    correct_index?: number;
-  }>;
-  const marksPerCorrect = Number(finalTest.marks_per_correct) || 1;
-  const negativeMark = Number(finalTest.negative_mark) || 0.25;
+  const questions = (questionRows ?? []).map((row: { question_number: number; correct_answer: string }) => ({
+    id: row.question_number,
+    correctIndex: correctAnswerToIndex(row.correct_answer),
+  }));
+  const marksPerCorrect = Number(finalTestMeta.marks_per_correct) || 1;
+  const negativeMark = Number(finalTestMeta.negative_mark) || 0.25;
   const maxScore = questions.length * marksPerCorrect;
 
   let correct = 0, incorrect = 0, unattempted = 0;
   for (const q of questions) {
-    const correctIdx = q.correctIndex ?? q.correct_index ?? 0;
+    const correctIdx = q.correctIndex;
     const userAnswer = body.answers?.[String(q.id)];
     if (userAnswer === undefined || userAnswer === null) {
       unattempted++;

@@ -496,6 +496,155 @@ export async function uploadCourseResource(
   return {};
 }
 
+// ── Mock Tests ────────────────────────────────────────────────────────────────
+
+export type MockTestUpdateData = {
+  title?: string;
+  section?: string;
+  category?: string;
+  duration_minutes?: number;
+  total_questions?: number;
+  total_marks?: number;
+  attempted_label?: string;
+  language?: string;
+  difficulty?: string;
+  recent_attempt_line?: string;
+  marks_per_correct?: number;
+  negative_mark?: number;
+  is_free?: boolean;
+  price?: number;
+};
+
+// Shape for questions coming from Excel upload
+export type ExcelQuestionRow = {
+  question: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_answer: "A" | "B" | "C" | "D";
+  subject?: string;
+};
+
+export async function createMockTest(
+  _prevState: string | null,
+  formData: FormData
+): Promise<string | null> {
+  const title = (formData.get("title") as string)?.trim();
+  const customSlug = (formData.get("slug") as string)?.trim();
+
+  if (!title) return "Title is required.";
+
+  const slug = customSlug ? slugify(customSlug) : slugify(title);
+  if (!slug) return "Could not generate a valid slug.";
+
+  const { data: existing } = await supabaseAdmin
+    .from("mock_tests")
+    .select("slug")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (existing) return `A test with slug "${slug}" already exists.`;
+
+  const { error } = await supabaseAdmin.from("mock_tests").insert({
+    slug,
+    title,
+    section: "",
+    category: "General",
+    duration_minutes: 60,
+    total_questions: 0,
+    total_marks: 0,
+    attempted_label: "0 attempts",
+    language: "English",
+    difficulty: "MEDIUM",
+    recent_attempt_line: "",
+    marks_per_correct: 1,
+    negative_mark: 0,
+    is_free: true,
+    price: 0,
+    questions: [],
+  });
+
+  if (error) return error.message;
+
+  revalidatePath("/admin/mock-tests");
+  redirect(`/admin/mock-tests/${slug}`);
+}
+
+export async function updateMockTest(
+  slug: string,
+  data: MockTestUpdateData
+): Promise<{ error?: string }> {
+  const { error } = await supabaseAdmin
+    .from("mock_tests")
+    .update(data)
+    .eq("slug", slug);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/mock-tests");
+  revalidatePath("/mock-test");
+  revalidatePath(`/mock-test/${slug}`);
+  return {};
+}
+
+export async function deleteMockTest(slug: string): Promise<{ error?: string }> {
+  const { error } = await supabaseAdmin.from("mock_tests").delete().eq("slug", slug);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/mock-tests");
+  revalidatePath("/mock-test");
+  return {};
+}
+
+export async function appendQuestionsToTest(
+  slug: string,
+  newQuestions: ExcelQuestionRow[]
+): Promise<{ error?: string; added?: number }> {
+  // Find the highest existing question_number for this test
+  const { data: existing } = await supabaseAdmin
+    .from("mock_test_questions")
+    .select("question_number")
+    .eq("test_slug", slug)
+    .order("question_number", { ascending: false })
+    .limit(1);
+
+  const lastNum = (existing?.[0] as { question_number: number } | undefined)?.question_number ?? 0;
+
+  const rows = newQuestions.map((q, i) => ({
+    test_slug: slug,
+    question_number: lastNum + i + 1,
+    question: q.question,
+    option_a: q.option_a,
+    option_b: q.option_b,
+    option_c: q.option_c,
+    option_d: q.option_d,
+    correct_answer: q.correct_answer,
+    subject: q.subject ?? "",
+  }));
+
+  const { error: insertErr } = await supabaseAdmin
+    .from("mock_test_questions")
+    .insert(rows);
+
+  if (insertErr) return { error: insertErr.message };
+
+  // Update total_questions count
+  const { count } = await supabaseAdmin
+    .from("mock_test_questions")
+    .select("*", { count: "exact", head: true })
+    .eq("test_slug", slug);
+
+  await supabaseAdmin
+    .from("mock_tests")
+    .update({ total_questions: count ?? lastNum + rows.length })
+    .eq("slug", slug);
+
+  revalidatePath("/admin/mock-tests");
+  revalidatePath("/mock-test");
+  revalidatePath(`/mock-test/${slug}`);
+  return { added: rows.length };
+}
+
 export async function deleteCourseResource(
   courseSlug: string,
   moduleIndex: number,

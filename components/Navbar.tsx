@@ -12,11 +12,12 @@ import { useTheme } from "@/components/ThemeProvider";
 
 const navLinks = [
   { name: "Courses", href: "/course" },
+  { name: "Practice Tests", href: "/mock-test" },
   { name: "QuickSkills", href: "/skill-training" },
-  { name: "About", href: "/about" },
   { name: "Blogs", href: "/blogs" },
-  { name: "Practice test", href: "/mock-test" },
   { name: "Publish with Us", href: "/publish-with-us" },
+  { name: "About", href: "/about" },
+  { name: "Careers", href: "/careers" },
 ];
 
 
@@ -60,6 +61,8 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     setProfileOpen(false);
+    localStorage.removeItem("tlp_session_token");
+    await fetch("/api/session", { method: "DELETE" }).catch(() => {});
     await supabase.auth.signOut();
     router.push("/");
     router.refresh();

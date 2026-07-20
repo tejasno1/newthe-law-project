@@ -5,15 +5,17 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   BookOpen, GraduationCap, FileText,
-  BarChart2, ClipboardList, Menu, X, Tag, Video,
+  BarChart2, ClipboardList, Menu, X, Tag, Video, Upload,
 } from "lucide-react";
 import AdminLogoutButton from "./AdminLogoutButton";
 
 const NAV = [
-  { href: "/admin/courses",       label: "Courses",               icon: BookOpen, match: (p: string) => p.startsWith("/admin/courses") },
-  { href: "/admin/course-videos", label: "Course Videos",         icon: Video,    match: (p: string) => p.startsWith("/admin/course-videos") },
-  { href: "/admin/blogs",         label: "Blog Posts",            icon: FileText, match: (p: string) => p.startsWith("/admin/blogs") },
-  { href: "/admin/categories",    label: "Course Category Order", icon: Tag,      match: (p: string) => p.startsWith("/admin/categories") },
+  { href: "/admin/courses",       label: "Courses",               icon: BookOpen,      match: (p: string) => p.startsWith("/admin/courses") },
+  { href: "/admin/course-videos", label: "Course Videos",         icon: Video,         match: (p: string) => p.startsWith("/admin/course-videos") },
+  { href: "/admin/mock-tests",       label: "Mock Tests",            icon: ClipboardList, match: (p: string) => p.startsWith("/admin/mock-tests") },
+  { href: "/admin/upload-questions", label: "Upload Questions",      icon: Upload,        match: (p: string) => p.startsWith("/admin/upload-questions") },
+  { href: "/admin/blogs",            label: "Blog Posts",            icon: FileText,      match: (p: string) => p.startsWith("/admin/blogs") },
+  { href: "/admin/categories",    label: "Course Category Order", icon: Tag,           match: (p: string) => p.startsWith("/admin/categories") },
 ];
 
 const ANALYTICS = [

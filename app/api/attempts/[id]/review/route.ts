@@ -23,16 +23,26 @@ export async function GET(
   if (attempt.status === "in_progress")
     return NextResponse.json({ error: "Test not yet submitted" }, { status: 403 });
 
-  const { data: test } = await supabaseService
-    .from("mock_tests")
-    .select("questions")
-    .eq("slug", attempt.test_slug)
-    .single();
+  const { data: questionRows } = await supabaseService
+    .from("mock_test_questions")
+    .select("question_number, question, option_a, option_b, option_c, option_d, correct_answer, subject")
+    .eq("test_slug", attempt.test_slug)
+    .order("question_number", { ascending: true });
 
-  if (!test) return NextResponse.json({ error: "Test not found" }, { status: 404 });
+  if (!questionRows) return NextResponse.json({ error: "Test not found" }, { status: 404 });
+
+  const correctAnswerToIndex = (a: string) => ({ A: 0, B: 1, C: 2, D: 3 }[a?.toUpperCase()] ?? 0);
+
+  const questions = questionRows.map((row) => ({
+    id: row.question_number,
+    text: row.question,
+    options: [row.option_a, row.option_b, row.option_c, row.option_d],
+    correctIndex: correctAnswerToIndex(row.correct_answer), // safe — attempt already submitted
+    ...(row.subject ? { subject: row.subject } : {}),
+  }));
 
   return NextResponse.json({
-    questions: test.questions, // correctIndex included — safe because attempt is already submitted
+    questions,
     answers: attempt.answers,
   });
 }
