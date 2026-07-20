@@ -264,7 +264,7 @@ export default function MockTestEditForm({ test, questionCount }: { test: TestRo
         {/* ── Display Labels ──────────────────────────────────────────────── */}
         <SectionCard title="Display Labels">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Attempted Label" hint="Shown on card e.g. "4.2k Attempts"">
+            <Field label="Attempted Label" hint={`Shown on card e.g. "4.2k Attempts"`}>
               <input className={inputCls} value={attemptedLabel} onChange={(e) => setAttemptedLabel(e.target.value)} placeholder="e.g. 4.2k Attempts" />
             </Field>
             <Field label="Recent Attempt Line" hint="General display only — per-student data is auto-computed">
