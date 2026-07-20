@@ -23,7 +23,6 @@ import SectionalSummary, { computeSectionalStats } from "@/components/SectionalS
 import TestResultView from "@/components/TestResultView";
 import { trackMcqEvent } from "@/lib/mcqTracking";
 import {
-  GraduationCap,
   Flag,
   Star,
   Pause,
@@ -102,7 +101,7 @@ export default function MockTestAttempt({ test, allTests = [] }: { test: MockTes
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [marked, setMarked] = useState<Set<number>>(new Set());
-  const [visited, setVisited] = useState<Set<number>>(new Set([test.questions[0].id]));
+  const [visited, setVisited] = useState<Set<number>>(new Set(test.questions[0] ? [test.questions[0].id] : []));
   const [gridView, setGridView] = useState(true);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [hasOpenedSubmitModal, setHasOpenedSubmitModal] = useState(false);
@@ -691,9 +690,8 @@ export default function MockTestAttempt({ test, allTests = [] }: { test: MockTes
         {/* Desktop header */}
         <div className="hidden lg:flex items-center gap-3 px-4 sm:px-6 py-3 justify-between flex-wrap">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
-              <GraduationCap className="w-5 h-5 text-white" />
-            </div>
+            <img src="/lightmodelogotlp.png" alt="The Law Project" className="h-7 w-auto object-contain dark:hidden" />
+            <img src="/tlpfinallogo.png" alt="The Law Project" className="h-7 w-auto object-contain hidden dark:block" />
             <span className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[160px] sm:max-w-xs">{test.title}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -1304,9 +1302,7 @@ function MockTestReport({
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <GraduationCap className="w-4 h-4 text-white" />
-              </div>
+              <img src="/lightmodelogotlp.png" alt="The Law Project" className="h-6 w-auto object-contain" />
               <span className="text-sm font-bold text-gray-900">The Law Project</span>
             </div>
             <h1 className="text-xl font-bold text-gray-900">{test.title}</h1>
