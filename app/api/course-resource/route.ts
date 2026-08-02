@@ -17,5 +17,8 @@ export async function GET(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ url: data.signedUrl });
+  // Cache the signed URL response for 55 min (URL itself is valid for 60 min)
+  return NextResponse.json({ url: data.signedUrl }, {
+    headers: { "Cache-Control": "private, max-age=3300, stale-while-revalidate=300" },
+  });
 }

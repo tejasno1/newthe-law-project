@@ -2,10 +2,37 @@ import type { Metadata } from "next"
 import "./globals.css"
 import WhatsAppWidget from "@/components/WhatsAppWidget"
 import { ThemeProvider } from "@/components/ThemeProvider"
+import SessionGuard from "@/components/SessionGuard"
 
 export const metadata: Metadata = {
-  title: "The Law Project",
-  description: "Master design skills with expert-led courses",
+  metadataBase: new URL("https://the-law-project.vercel.app"),
+  title: {
+    default: "The Law Project",
+    template: "%s | The Law Project",
+  },
+  description: "Expert-led legal education for CLAT, internships, and legal careers. Practical courses built by top lawyers.",
+  openGraph: {
+    title: "The Law Project",
+    description: "Expert-led legal education for CLAT, internships, and legal careers.",
+    url: "https://the-law-project.vercel.app",
+    siteName: "The Law Project",
+    images: [
+      {
+        url: "/lightmodelogotlp.png",
+        width: 1200,
+        height: 630,
+        alt: "The Law Project",
+      },
+    ],
+    type: "website",
+    locale: "en_IN",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "The Law Project",
+    description: "Expert-led legal education for CLAT, internships, and legal careers.",
+    images: ["/lightmodelogotlp.png"],
+  },
 }
 
 export default function RootLayout({
@@ -22,6 +49,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased bg-white dark:bg-gray-900 transition-colors duration-300">
         <ThemeProvider>
+          <SessionGuard />
           {children}
           <WhatsAppWidget />
         </ThemeProvider>

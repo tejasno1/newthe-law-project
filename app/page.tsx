@@ -114,15 +114,13 @@ const HeroSection2 = () => {
         </div>
 
         {/* Text content */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+        <div
           className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-28 lg:pt-32 pb-10 sm:pb-4"
+          style={{ animation: "tlpSlideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both" }}
         >
           <div className="max-w-xl lg:max-w-md xl:max-w-lg text-center sm:text-left">
             <h1 className="text-xl sm:text-5xl lg:text-[76px] lg:leading-[76px] font-semibold text-gray-900 dark:text-white leading-tight mb-2 sm:mb-5 mt-6 sm:mt-0">
-              The best investment you can ever make is the one in <span className="text-primary-600">yourself.</span>
+              Build the Legal Career <span className="text-primary-600">You Deserve.</span>
             </h1>
             <p className="text-sm sm:text-lg text-gray-700 sm:text-gray-500 dark:text-gray-300 sm:dark:text-gray-400 mb-2 sm:mb-6 max-w-lg">
               Begin your legal journey with top-tier mentorship. Explore preparation strategies designed for elite legal opportunities.
@@ -133,7 +131,7 @@ const HeroSection2 = () => {
               </button>
             </div>
           </div>
-        </motion.div>
+        </div>
 
       </section>
 

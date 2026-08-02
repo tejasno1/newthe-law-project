@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { GraduationCap, Check, X, ArrowLeft } from "lucide-react";
+import { Check, X, ArrowLeft } from "lucide-react";
 import { trackMcqEvent } from "@/lib/mcqTracking";
 import type { MockTestSafe } from "@/lib/mockTests";
 import SectionalSummary, { computeSectionalStats } from "@/components/SectionalSummary";
@@ -74,9 +74,8 @@ export default function TestResultView({
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-7 h-7 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <GraduationCap className="w-4 h-4 text-white" />
-              </div>
+              <img src="/lightmodelogotlp.png" alt="The Law Project" className="h-6 w-auto object-contain dark:hidden" />
+              <img src="/tlpfinallogo.png" alt="The Law Project" className="h-6 w-auto object-contain hidden dark:block" />
               <span className="text-sm font-bold text-gray-900 dark:text-white">The Law Project</span>
             </div>
             <h1 className="text-lg font-bold text-gray-900 dark:text-white">{test.title}</h1>

@@ -6,7 +6,7 @@ import {
   BadgeCheck, Users, Calendar,
 } from "lucide-react";
 
-export type BannerVariant = "courses" | "blogs" | "tests" | "quickskills";
+export type BannerVariant = "courses" | "blogs" | "tests" | "quickskills" | "resources";
 
 interface Props {
   title: string;
@@ -15,11 +15,18 @@ interface Props {
 }
 
 const bullets: Record<BannerVariant, string[]> = {
+  resources: [
+    "Landmark case laws — carefully analysed and exam-ready",
+    "High-quality MCQ PDFs crafted by practising lawyers and faculty",
+    "Bare acts with key provisions highlighted for quick revision",
+    "Curated for CLAT PG, Judiciary and AIBE — not just any PDF dump",
+  ],
   courses: [
-    "HD video lectures with downloadable PDF notes for every module",
-    "Chapter-wise MCQs to test understanding after each lesson",
-    "Live doubt-clearing sessions with expert faculty",
-    "Skill India certified certificate upon completion",
+    "Expert-led HD video lectures",
+    "Well-structured notes and study resources",
+    "Chapter-wise practice questions and mock tests",
+    "Live interactive doubt-solving sessions",
+    "Career-focused learning with practical insights",
   ],
   blogs: [
     "In-depth legal analysis written by practising lawyers",
@@ -28,16 +35,16 @@ const bullets: Record<BannerVariant, string[]> = {
     "New articles published every week across all law areas",
   ],
   tests: [
-    "Full-length CLAT, Judiciary and Bar Council mock tests",
-    "Section-wise tests to precisely target your weak areas",
-    "Detailed answer explanations reviewed by legal experts",
-    "Performance analytics to track your improvement over time",
+    "Full-length mock tests for CLAT, Judiciary, AIBE, and other law entrance exams",
+    "Topic-wise and section-wise practice tests to master every subject",
+    "Detailed answer explanations with legal reasoning and expert insights",
+    "Performance reports to identify strengths, improve weak areas, and track progress",
   ],
   quickskills: [
-    "Live and recorded sessions led by industry-expert lawyers",
-    "Project-based curriculum with real-world case studies",
-    "Skill India and NSDC certified certificates on completion",
-    "Placement assistance and career guidance post-programme",
+    "Expert-led live and self-paced learning",
+    "Project-based assignments and practical case studies",
+    "Certificate of Completion for every programme",
+    "Career support, mentorship, and networking opportunities",
   ],
 };
 
@@ -226,9 +233,9 @@ function QuickSkillsCard() {
     { icon: Award,         label: "Placement Assistance",       detail: "Career guidance post-programme" },
   ];
   const badges = [
-    { label: "Skill India Certified", color: "bg-green-100 text-green-700"   },
-    { label: "6–8 Weeks",             color: "bg-blue-100 text-blue-700"     },
-    { label: "Live Doubt Sessions",   color: "bg-purple-100 text-purple-700" },
+    { label: "Certificate of Completion", color: "bg-green-100 text-green-700"   },
+    { label: "6–8 Weeks",                 color: "bg-blue-100 text-blue-700"     },
+    { label: "Live Doubt Sessions",       color: "bg-purple-100 text-purple-700" },
   ];
   return (
     <div className="bg-white rounded-2xl shadow-2xl overflow-hidden" style={{ animation: "tlpFloat 5s ease-in-out infinite" }}>
@@ -236,7 +243,7 @@ function QuickSkillsCard() {
         <BadgeCheck className="w-4 h-4 text-primary-200" />
         <div>
           <p className="text-white font-bold text-sm">Programme Highlights</p>
-          <p className="text-primary-200 text-[10px] mt-0.5">Skill India + NSDC Certified</p>
+          <p className="text-primary-200 text-[10px] mt-0.5">Expert-led legal programmes</p>
         </div>
       </div>
       <div className="p-3 space-y-1.5">
@@ -277,12 +284,58 @@ function QuickSkillsCard() {
   );
 }
 
+/* ── RESOURCES: download preview card ───────────────────────────────────── */
+function ResourcesCard() {
+  const items = [
+    { icon: ClipboardList, label: "CLAT PG MCQs — Topic-wise",       tag: "MCQ PDF",  tagColor: "bg-violet-100 text-violet-700" },
+    { icon: BookOpen,      label: "Supreme Court Case Summaries",     tag: "Case Laws", tagColor: "bg-amber-100 text-amber-700"  },
+    { icon: FileText,      label: "Indian Penal Code — BNS 2023",     tag: "Bare Act", tagColor: "bg-emerald-100 text-emerald-700" },
+  ];
+  return (
+    <div className="bg-white rounded-2xl shadow-2xl overflow-hidden" style={{ animation: "tlpFloat 5s ease-in-out infinite" }}>
+      <div className="bg-primary-600 px-4 py-3.5 flex items-center gap-2">
+        <FileText className="w-3.5 h-3.5 text-primary-200" />
+        <div>
+          <p className="text-white font-bold text-sm">Curated Legal Resources</p>
+          <p className="text-primary-200 text-[10px] mt-0.5">Quality over quantity — every file vetted</p>
+        </div>
+      </div>
+      <div className="px-3 pt-3 pb-1">
+        {items.map((item, i) => (
+          <div key={item.label}>
+            <div className="flex items-center gap-2.5 py-2.5">
+              <div className="w-7 h-7 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0">
+                <item.icon className="w-3.5 h-3.5 text-primary-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-gray-800 text-[10px] font-semibold leading-snug line-clamp-1">{item.label}</p>
+                <span className={`inline-block mt-0.5 rounded-full px-1.5 text-[8px] font-semibold ${item.tagColor}`}>{item.tag}</span>
+              </div>
+              <div className="w-5 h-5 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
+                <Award className="w-3 h-3 text-primary-500" />
+              </div>
+            </div>
+            {i < items.length - 1 && <div className="border-t border-gray-100" />}
+          </div>
+        ))}
+      </div>
+      <div className="px-3 pb-3 pt-1">
+        <div className="rounded-xl bg-primary-50 border border-primary-100 px-3 py-2 flex items-center gap-2">
+          <BadgeCheck className="w-3 h-3 text-primary-600 flex-shrink-0" />
+          <span className="text-primary-700 text-[10px] font-semibold">Prepared by practising lawyers &amp; faculty</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main banner ─────────────────────────────────────────────────────────── */
 export default function PageHeroBanner({ title, subtitle, variant = "courses" }: Props) {
   const rightCard =
     variant === "courses"    ? <CoursesCard />    :
     variant === "blogs"      ? <BlogsCard />      :
     variant === "tests"      ? <TestsCard />      :
+    variant === "resources"  ? <ResourcesCard />  :
                                <QuickSkillsCard />;
 
   return (
@@ -309,11 +362,11 @@ export default function PageHeroBanner({ title, subtitle, variant = "courses" }:
         {/* Dark mode corner vignettes — dark to frame the grid */}
         <div className="hidden dark:block absolute inset-0 bg-[radial-gradient(ellipse_58%_48%_at_100%_0%,rgba(3,7,18,0.92)_0%,transparent_100%),radial-gradient(ellipse_58%_48%_at_100%_100%,rgba(3,7,18,0.92)_0%,transparent_100%)]" />
       </div>
-      <div className="relative z-10 max-w-[88rem] mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 lg:gap-10 xl:gap-14 md:min-h-[160px] lg:min-h-[200px]">
 
           {/* ── LEFT ──────────────────────────────────────────────────── */}
-          <div className="flex-1 min-w-0 md:pl-4 lg:pl-12 xl:pl-16">
+          <div className="flex-1 min-w-0">
             <p className="text-[10px] sm:text-[11px] font-bold tracking-[0.2em] uppercase text-primary-600 dark:text-primary-400 mb-2 sm:mb-3">
               {variant === "blogs" ? "News, Analysis & Career Roadmaps" : "The Law Project"}
             </p>
@@ -331,14 +384,16 @@ export default function PageHeroBanner({ title, subtitle, variant = "courses" }:
                 </li>
               ))}
             </ul>
-            <div className="flex items-stretch w-fit rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/80 dark:bg-white/5 divide-x divide-gray-200 dark:divide-white/10 overflow-hidden">
-              {stats.map((s) => (
-                <div key={s.label} className="px-3 md:px-5 py-2.5 md:py-3">
-                  <p className="text-gray-900 dark:text-white font-bold text-base md:text-lg leading-none">{s.value}</p>
-                  <p className="text-gray-500 dark:text-gray-400 text-[10px] md:text-[11px] mt-1 md:mt-1.5 whitespace-nowrap">{s.label}</p>
-                </div>
-              ))}
-            </div>
+            {variant !== "resources" && (
+              <div className="flex items-stretch w-fit rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/80 dark:bg-white/5 divide-x divide-gray-200 dark:divide-white/10 overflow-hidden">
+                {stats.map((s) => (
+                  <div key={s.label} className="px-3 md:px-5 py-2.5 md:py-3">
+                    <p className="text-gray-900 dark:text-white font-bold text-base md:text-lg leading-none">{s.value}</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-[10px] md:text-[11px] mt-1 md:mt-1.5 whitespace-nowrap">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* ── RIGHT: variant-specific card ──────────────────────────── */}

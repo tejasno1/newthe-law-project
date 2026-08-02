@@ -138,8 +138,14 @@ export default function MockTestAttempt({ test, allTests = [] }: { test: MockTes
   // Mobile palette drawer
   const [showMobilePalette, setShowMobilePalette] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [mobilePassageTab, setMobilePassageTab] = useState<"passage" | "question">("passage");
 
   const current = test.questions[currentIndex];
+  const isPassageBased = test.testType === "passage_based";
+  const currentPassage =
+    isPassageBased && current
+      ? (test.passages ?? []).find((p) => p.id === current.passageId)
+      : undefined;
 
   // Auth guard + server attempt start
   useEffect(() => {
@@ -401,6 +407,12 @@ export default function MockTestAttempt({ test, allTests = [] }: { test: MockTes
   const goTo = (index: number) => {
     if (index !== currentIndex) {
       recordTimeForCurrentQuestion();
+      if (isPassageBased) {
+        const nextQ = test.questions[index];
+        if (nextQ?.passageId !== current.passageId) {
+          setMobilePassageTab("passage");
+        }
+      }
     }
     setCurrentIndex(index);
     setVisited((prev) => new Set(prev).add(test.questions[index].id));
@@ -716,16 +728,62 @@ export default function MockTestAttempt({ test, allTests = [] }: { test: MockTes
         </div>
       </header>
 
-      {/* Mobile: section subject tabs */}
+      {/* Mobile: passage/question tabs (passage-based) or section tab (normal) */}
       <div className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 overflow-x-auto flex-shrink-0">
-        <div className="flex">
-          <button className="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-primary-600 text-primary-600 dark:text-primary-400">
-            {test.section}
-          </button>
-        </div>
+        {isPassageBased && currentPassage ? (
+          <div className="flex">
+            <button
+              onClick={() => setMobilePassageTab("passage")}
+              className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                mobilePassageTab === "passage"
+                  ? "border-amber-500 text-amber-600 dark:text-amber-400"
+                  : "border-transparent text-gray-500 dark:text-gray-400"
+              }`}
+            >
+              Passage {currentPassage.passageNumber}
+            </button>
+            <button
+              onClick={() => setMobilePassageTab("question")}
+              className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                mobilePassageTab === "question"
+                  ? "border-primary-600 text-primary-600 dark:text-primary-400"
+                  : "border-transparent text-gray-500 dark:text-gray-400"
+              }`}
+            >
+              Question {currentIndex + 1}
+            </button>
+          </div>
+        ) : (
+          <div className="flex">
+            <button className="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-primary-600 text-primary-600 dark:text-primary-400">
+              {test.section}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col lg:flex-row lg:min-h-0 lg:overflow-hidden">
+
+        {/* Desktop passage panel — only for passage_based, hidden on mobile */}
+        {isPassageBased && currentPassage && !showAllQuestions && (
+          <div className="hidden lg:flex lg:flex-col border-r border-gray-100 dark:border-gray-700 lg:w-[42%] lg:min-h-0 lg:overflow-y-auto bg-amber-50 dark:bg-amber-900/10 flex-shrink-0">
+            <div className="px-5 py-3 border-b border-amber-200 dark:border-amber-800 bg-amber-100 dark:bg-amber-900/20 flex-shrink-0">
+              <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                Passage {currentPassage.passageNumber}
+                {currentPassage.title ? ` — ${currentPassage.title}` : ""}
+              </p>
+              {currentPassage.source && (
+                <p className="text-xs text-amber-500 dark:text-amber-500 mt-0.5 italic">{currentPassage.source}</p>
+              )}
+            </div>
+            <div className="p-5">
+              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                {currentPassage.text}
+              </p>
+            </div>
+          </div>
+        )}
+
         {showAllQuestions ? (
           <div className="p-4 sm:p-6 lg:flex-1 lg:min-h-0 lg:overflow-y-auto pb-28 lg:pb-6">
             <div className="flex items-center justify-between mb-5">
@@ -763,7 +821,37 @@ export default function MockTestAttempt({ test, allTests = [] }: { test: MockTes
           </div>
         ) : (
         <div className="p-4 sm:p-6 lg:flex-1 lg:min-h-0 lg:overflow-y-auto pb-28 lg:pb-6">
-          <div className="max-w-3xl">
+
+          {/* Mobile: passage content when passage tab is active */}
+          {isPassageBased && currentPassage && mobilePassageTab === "passage" && (
+            <div className="lg:hidden mb-4">
+              <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-2xl overflow-hidden">
+                <div className="px-4 py-3 bg-amber-100 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800">
+                  <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                    Passage {currentPassage.passageNumber}
+                    {currentPassage.title ? ` — ${currentPassage.title}` : ""}
+                  </p>
+                  {currentPassage.source && (
+                    <p className="text-xs text-amber-500 mt-0.5 italic">{currentPassage.source}</p>
+                  )}
+                </div>
+                <div className="p-4">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                    {currentPassage.text}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMobilePassageTab("question")}
+                className="w-full mt-3 bg-primary-600 text-white rounded-xl py-3 text-sm font-semibold hover:bg-primary-700 transition-colors"
+              >
+                Go to Question {currentIndex + 1} →
+              </button>
+            </div>
+          )}
+
+          {/* Question content — hidden on mobile when showing passage tab */}
+          <div className={`max-w-3xl ${isPassageBased && mobilePassageTab === "passage" ? "hidden lg:block" : ""}`}>
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div className="flex items-center gap-2.5">
               <h2 className="font-bold text-gray-900 dark:text-white">
@@ -864,26 +952,80 @@ export default function MockTestAttempt({ test, allTests = [] }: { test: MockTes
           </div>
 
           {gridView ? (
-            <div className="grid grid-cols-5 gap-2 mb-6 max-h-[340px] overflow-y-auto p-1">
-              {test.questions.map((q, i) => {
-                const status = getStatus(q.id);
-                const isCurrent = i === currentIndex;
-                return (
-                  <button
-                    key={q.id}
-                    onClick={() => goTo(i)}
-                    className={`h-8 rounded-lg text-xs font-semibold flex items-center justify-center border-2 transition-colors ${
-                      isCurrent ? "bg-gray-900 dark:bg-gray-100 border-gray-900 dark:border-gray-100 text-white dark:text-gray-900"
-                      : status === "attempted" ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400"
-                      : status === "marked" ? "bg-rose-50 dark:bg-rose-900/20 border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-400"
-                      : status === "unattempted" ? "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400"
-                      : "bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500"
-                    }`}
-                  >
-                    {(i + 1).toString().padStart(2, "0")}
-                  </button>
-                );
-              })}
+            <div className="mb-6 max-h-[340px] overflow-y-auto p-1">
+              {isPassageBased && (test.passages ?? []).length > 0 ? (
+                // Passage-based: group by passage
+                <div className="space-y-3">
+                  {(test.passages ?? []).map((passage) => {
+                    const pQs = test.questions.map((q, i) => ({ q, i })).filter(({ q }) => q.passageId === passage.id);
+                    if (pQs.length === 0) return null;
+                    return (
+                      <div key={passage.id}>
+                        <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1.5">
+                          P{passage.passageNumber}{passage.title ? ` — ${passage.title.slice(0, 24)}` : ""}
+                        </p>
+                        <div className="grid grid-cols-5 gap-2">
+                          {pQs.map(({ q, i }) => {
+                            const status = getStatus(q.id);
+                            const isCurrent = i === currentIndex;
+                            return (
+                              <button key={q.id} onClick={() => goTo(i)} className={`h-8 rounded-lg text-xs font-semibold flex items-center justify-center border-2 transition-colors ${
+                                isCurrent ? "bg-gray-900 dark:bg-gray-100 border-gray-900 dark:border-gray-100 text-white dark:text-gray-900"
+                                : status === "attempted" ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400"
+                                : status === "marked" ? "bg-rose-50 dark:bg-rose-900/20 border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-400"
+                                : status === "unattempted" ? "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400"
+                                : "bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500"
+                              }`}>{(i + 1).toString().padStart(2, "0")}</button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {/* Questions without a passage */}
+                  {(() => {
+                    const unlinked = test.questions.map((q, i) => ({ q, i })).filter(({ q }) => !q.passageId);
+                    if (unlinked.length === 0) return null;
+                    return (
+                      <div>
+                        <p className="text-xs font-semibold text-gray-400 mb-1.5">Other</p>
+                        <div className="grid grid-cols-5 gap-2">
+                          {unlinked.map(({ q, i }) => {
+                            const status = getStatus(q.id);
+                            const isCurrent = i === currentIndex;
+                            return (
+                              <button key={q.id} onClick={() => goTo(i)} className={`h-8 rounded-lg text-xs font-semibold flex items-center justify-center border-2 transition-colors ${
+                                isCurrent ? "bg-gray-900 dark:bg-gray-100 border-gray-900 dark:border-gray-100 text-white dark:text-gray-900"
+                                : status === "attempted" ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400"
+                                : status === "marked" ? "bg-rose-50 dark:bg-rose-900/20 border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-400"
+                                : status === "unattempted" ? "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400"
+                                : "bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500"
+                              }`}>{(i + 1).toString().padStart(2, "0")}</button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              ) : (
+                // Normal test: flat grid
+                <div className="grid grid-cols-5 gap-2">
+                  {test.questions.map((q, i) => {
+                    const status = getStatus(q.id);
+                    const isCurrent = i === currentIndex;
+                    return (
+                      <button key={q.id} onClick={() => goTo(i)} className={`h-8 rounded-lg text-xs font-semibold flex items-center justify-center border-2 transition-colors ${
+                        isCurrent ? "bg-gray-900 dark:bg-gray-100 border-gray-900 dark:border-gray-100 text-white dark:text-gray-900"
+                        : status === "attempted" ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400"
+                        : status === "marked" ? "bg-rose-50 dark:bg-rose-900/20 border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-400"
+                        : status === "unattempted" ? "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400"
+                        : "bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500"
+                      }`}>{(i + 1).toString().padStart(2, "0")}</button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-2 mb-6 max-h-[340px] overflow-y-auto p-1">

@@ -14,6 +14,7 @@ const navLinks = [
   { name: "Courses", href: "/course" },
   { name: "Practice Tests", href: "/mock-test" },
   { name: "QuickSkills", href: "/skill-training" },
+  { name: "Resources", href: "/resources" },
   { name: "Blogs", href: "/blogs" },
   { name: "Publish with Us", href: "/publish-with-us" },
   { name: "About", href: "/about" },

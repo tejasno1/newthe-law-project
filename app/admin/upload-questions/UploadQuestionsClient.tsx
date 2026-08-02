@@ -26,6 +26,7 @@ type ParsedRow = {
   option_d: string;
   correct_answer: "A" | "B" | "C" | "D";
   subject: string;
+  passage_number?: number;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -65,8 +66,10 @@ function parseSheet(workbook: XLSX.WorkBook): ParsedRow[] {
     const option_b  = find("optionb", "b", "opt_b", "option2", "optionb");
     const option_c  = find("optionc", "c", "opt_c", "option3", "optionc");
     const option_d  = find("optiond", "d", "opt_d", "option4", "optiond");
-    const ans_raw   = find("correctanswer", "answer", "correct", "ans", "correctoption", "key");
-    const subject   = find("subject", "section", "topic", "sub");
+    const ans_raw      = find("correctanswer", "answer", "correct", "ans", "correctoption", "key");
+    const subject      = find("subject", "section", "topic", "sub");
+    const passage_raw  = find("passagenumber", "passageno", "passagenum", "passage", "pno", "p");
+    const passage_number = passage_raw ? (parseInt(passage_raw) || undefined) : undefined;
 
     if (!question) return null; // skip empty rows
 
@@ -78,6 +81,7 @@ function parseSheet(workbook: XLSX.WorkBook): ParsedRow[] {
       option_d,
       correct_answer: normaliseAnswer(ans_raw),
       subject,
+      passage_number,
     };
   };
 
@@ -88,22 +92,30 @@ function parseSheet(workbook: XLSX.WorkBook): ParsedRow[] {
 
 function downloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ["Question", "Option A", "Option B", "Option C", "Option D", "Correct Answer", "Subject"],
+    ["Question", "Option A", "Option B", "Option C", "Option D", "Correct Answer", "Subject", "Passage Number"],
     [
       "Which Article of the Constitution deals with Right to Equality?",
       "Article 12", "Article 14", "Article 19", "Article 21",
-      "B", "Constitutional Law",
+      "B", "Constitutional Law", 1,
     ],
     [
       "The Basic Structure doctrine was propounded in which case?",
       "Golaknath v State of Punjab", "Kesavananda Bharati v State of Kerala",
       "Minerva Mills v Union of India", "Maneka Gandhi v Union of India",
-      "B", "Constitutional Law",
+      "B", "Constitutional Law", 1,
+    ],
+    [
+      "Which Article guarantees Freedom of Speech and Expression?",
+      "Article 14", "Article 19", "Article 21", "Article 32",
+      "B", "Constitutional Law", 2,
     ],
   ]);
 
   // Column widths
-  ws["!cols"] = [{ wch: 60 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 14 }, { wch: 20 }];
+  ws["!cols"] = [
+    { wch: 60 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 },
+    { wch: 14 }, { wch: 20 }, { wch: 16 },
+  ];
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Questions");
@@ -192,6 +204,7 @@ export default function UploadQuestionsClient({ tests, preselectedSlug }: { test
       option_d: r.option_d,
       correct_answer: r.correct_answer,
       subject: r.subject || undefined,
+      passage_number: r.passage_number,
     }));
 
     startTransition(async () => {

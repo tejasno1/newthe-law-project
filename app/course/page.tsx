@@ -17,8 +17,8 @@ export default async function CoursePage() {
     <main className="min-h-screen bg-white dark:bg-gray-900">
       <Navbar />
       <PageHeroBanner
-        title="Explore Our Legal Courses"
-        subtitle="Practical, career-focused courses built to help you crack exams, land internships, and build real legal skills."
+        title="Build Skills That Matter"
+        subtitle="Comprehensive, practice-oriented courses designed to help you excel in exams, strengthen your legal knowledge, and develop skills for a successful legal career."
         variant="courses"
       />
       <CourseCatalog courses={courses} orderedCategories={orderedCategories} />

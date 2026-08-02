@@ -11,22 +11,18 @@ export default function SkillTrainingPage() {
 
       <PageHeroBanner
         title="QuickSkills Programmes"
-        subtitle="Practitioner-designed certificate courses built for lawyers at every stage — from your first brief to complex regulatory matters."
+        subtitle="Bridge the gap between legal education and legal practice with short, practical programmes taught by experts."
         variant="quickskills"
       />
 
       {/* ── PROGRAMME CARDS ──────────────────────────────────── */}
-      <section className="max-w-[88rem] mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <SkillProgrammeGrid />
       </section>
 
       {/* ── BOTTOM CTA STRIP ─────────────────────────────────── */}
       <section className="bg-primary-600 py-10 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <BadgeCheck className="w-5 h-5 text-primary-200" />
-            <span className="text-primary-200 text-sm font-semibold">Skill India + NSDC Certified</span>
-          </div>
           <h2 className="text-2xl sm:text-3xl font-semibold text-white mb-3">
             Not sure which programme is right for you?
           </h2>

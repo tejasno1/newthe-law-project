@@ -513,6 +513,7 @@ export type MockTestUpdateData = {
   negative_mark?: number;
   is_free?: boolean;
   price?: number;
+  test_type?: "normal" | "passage_based";
 };
 
 // Shape for questions coming from Excel upload
@@ -524,6 +525,7 @@ export type ExcelQuestionRow = {
   option_d: string;
   correct_answer: "A" | "B" | "C" | "D";
   subject?: string;
+  passage_number?: number; // for passage-based tests
 };
 
 export async function createMockTest(
@@ -610,6 +612,18 @@ export async function appendQuestionsToTest(
 
   const lastNum = (existing?.[0] as { question_number: number } | undefined)?.question_number ?? 0;
 
+  // If any questions reference a passage_number, resolve to passage IDs
+  const passageNumberToId: Record<number, number> = {};
+  if (newQuestions.some((q) => q.passage_number)) {
+    const { data: passageRows } = await supabaseAdmin
+      .from("passages")
+      .select("id, passage_number")
+      .eq("test_slug", slug);
+    for (const p of (passageRows ?? []) as { id: number; passage_number: number }[]) {
+      passageNumberToId[p.passage_number] = p.id;
+    }
+  }
+
   const rows = newQuestions.map((q, i) => ({
     test_slug: slug,
     question_number: lastNum + i + 1,
@@ -620,6 +634,7 @@ export async function appendQuestionsToTest(
     option_d: q.option_d,
     correct_answer: q.correct_answer,
     subject: q.subject ?? "",
+    passage_id: q.passage_number ? (passageNumberToId[q.passage_number] ?? null) : null,
   }));
 
   const { error: insertErr } = await supabaseAdmin
@@ -643,6 +658,77 @@ export async function appendQuestionsToTest(
   revalidatePath("/mock-test");
   revalidatePath(`/mock-test/${slug}`);
   return { added: rows.length };
+}
+
+// ── Passages ──────────────────────────────────────────────────────────────────
+
+export type PassageData = {
+  title?: string;
+  text: string;
+  source?: string;
+};
+
+export async function createPassage(
+  testSlug: string,
+  data: PassageData
+): Promise<{ id?: number; passageNumber?: number; error?: string }> {
+  // Get next passage_number for this test
+  const { data: existing } = await supabaseAdmin
+    .from("passages")
+    .select("passage_number")
+    .eq("test_slug", testSlug)
+    .order("passage_number", { ascending: false })
+    .limit(1);
+
+  const nextNum = ((existing?.[0] as { passage_number: number } | undefined)?.passage_number ?? 0) + 1;
+
+  const { data: inserted, error } = await supabaseAdmin
+    .from("passages")
+    .insert({
+      test_slug: testSlug,
+      passage_number: nextNum,
+      title: data.title?.trim() || null,
+      text: data.text.trim(),
+      source: data.source?.trim() || null,
+    })
+    .select("id, passage_number")
+    .maybeSingle();
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/admin/mock-tests/${testSlug}`);
+  return { id: (inserted as { id: number }).id, passageNumber: nextNum };
+}
+
+export async function updatePassage(
+  passageId: number,
+  testSlug: string,
+  data: PassageData
+): Promise<{ error?: string }> {
+  const { error } = await supabaseAdmin
+    .from("passages")
+    .update({
+      title: data.title?.trim() || null,
+      text: data.text.trim(),
+      source: data.source?.trim() || null,
+    })
+    .eq("id", passageId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/admin/mock-tests/${testSlug}`);
+  return {};
+}
+
+export async function deletePassage(
+  passageId: number,
+  testSlug: string
+): Promise<{ error?: string }> {
+  const { error } = await supabaseAdmin.from("passages").delete().eq("id", passageId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/admin/mock-tests/${testSlug}`);
+  return {};
 }
 
 export async function deleteCourseResource(
@@ -675,5 +761,123 @@ export async function deleteCourseResource(
 
   if (error) return { error: error.message };
   revalidatePath(`/course/${courseSlug}/learn`);
+  return {};
+}
+
+// ── Resource Categories ────────────────────────────────────────────────────────
+
+export async function createResourceCategory(name: string) {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const { data, error } = await supabaseAdmin
+    .from("resource_categories")
+    .insert({ name, slug })
+    .select("id, name, slug")
+    .single();
+  if (error) return { error: error.message };
+  revalidatePath("/admin/resources");
+  revalidatePath("/resources");
+  return { category: data };
+}
+
+export async function deleteResourceCategory(id: number) {
+  const { error } = await supabaseAdmin.from("resource_categories").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/resources");
+  revalidatePath("/resources");
+  return {};
+}
+
+// ── Resources ──────────────────────────────────────────────────────────────────
+
+export interface ResourceFormData {
+  title: string;
+  description?: string;
+  categoryId?: number | null;
+  filePath?: string | null;
+  pages?: number | null;
+  sizeLabel?: string | null;
+  isFree?: boolean;
+  isPublished?: boolean;
+  sortOrder?: number;
+}
+
+export async function uploadResourceFile(formData: FormData) {
+  const file = formData.get("file") as File | null;
+  if (!file) return { error: "No file provided" };
+
+  const ext = file.name.split(".").pop() ?? "pdf";
+  const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  const { error } = await supabaseAdmin.storage
+    .from("resources")
+    .upload(path, buffer, { contentType: file.type, upsert: false });
+
+  if (error) return { error: error.message };
+  return { path };
+}
+
+export async function createResource(data: ResourceFormData) {
+  const { error, data: row } = await supabaseAdmin
+    .from("resources")
+    .insert({
+      title: data.title,
+      description: data.description ?? null,
+      category_id: data.categoryId ?? null,
+      file_path: data.filePath ?? null,
+      pages: data.pages ?? null,
+      size_label: data.sizeLabel ?? null,
+      is_free: data.isFree ?? true,
+      is_published: data.isPublished ?? false,
+      sort_order: data.sortOrder ?? 0,
+    })
+    .select("id")
+    .single();
+  if (error) return { error: error.message };
+  revalidatePath("/admin/resources");
+  revalidatePath("/resources");
+  return { id: (row as { id: number }).id };
+}
+
+export async function updateResource(id: number, data: ResourceFormData) {
+  const { error } = await supabaseAdmin
+    .from("resources")
+    .update({
+      title: data.title,
+      description: data.description ?? null,
+      category_id: data.categoryId ?? null,
+      file_path: data.filePath ?? null,
+      pages: data.pages ?? null,
+      size_label: data.sizeLabel ?? null,
+      is_free: data.isFree ?? true,
+      is_published: data.isPublished ?? false,
+      sort_order: data.sortOrder ?? 0,
+    })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/resources");
+  revalidatePath("/resources");
+  return {};
+}
+
+export async function deleteResource(id: number, filePath?: string | null) {
+  if (filePath) {
+    await supabaseAdmin.storage.from("resources").remove([filePath]);
+  }
+  const { error } = await supabaseAdmin.from("resources").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/resources");
+  revalidatePath("/resources");
+  return {};
+}
+
+export async function toggleResourcePublished(id: number, published: boolean) {
+  const { error } = await supabaseAdmin
+    .from("resources")
+    .update({ is_published: published })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/resources");
+  revalidatePath("/resources");
   return {};
 }

@@ -4,9 +4,10 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
-  BookOpen, GraduationCap, FileText,
-  BarChart2, ClipboardList, Menu, X, Tag, Video, Upload,
+  BookOpen, FileText,
+  BarChart2, ClipboardList, Menu, X, Tag, Video, Upload, Library,
 } from "lucide-react";
+import Image from "next/image";
 import AdminLogoutButton from "./AdminLogoutButton";
 
 const NAV = [
@@ -15,6 +16,7 @@ const NAV = [
   { href: "/admin/mock-tests",       label: "Mock Tests",            icon: ClipboardList, match: (p: string) => p.startsWith("/admin/mock-tests") },
   { href: "/admin/upload-questions", label: "Upload Questions",      icon: Upload,        match: (p: string) => p.startsWith("/admin/upload-questions") },
   { href: "/admin/blogs",            label: "Blog Posts",            icon: FileText,      match: (p: string) => p.startsWith("/admin/blogs") },
+  { href: "/admin/resources",        label: "Resources",             icon: Library,       match: (p: string) => p.startsWith("/admin/resources") },
   { href: "/admin/categories",    label: "Course Category Order", icon: Tag,           match: (p: string) => p.startsWith("/admin/categories") },
 ];
 
@@ -81,9 +83,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Menu size={20} className="text-gray-700" />
         </button>
         <Link href="/admin/courses" className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-[#4d65ff] rounded-lg flex items-center justify-center flex-shrink-0">
-            <GraduationCap className="w-4 h-4 text-white" />
-          </div>
+          <Image src="/lightmodelogotlp.png" alt="TLP" width={32} height={32} className="object-contain" />
           <span className="text-sm font-bold text-gray-900">TLP Admin</span>
         </Link>
       </header>
@@ -104,9 +104,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       >
         <div className="flex items-center justify-between px-4 h-14 border-b border-gray-200 flex-shrink-0">
           <Link href="/admin/courses" onClick={() => setOpen(false)} className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-[#4d65ff] rounded-lg flex items-center justify-center flex-shrink-0">
-              <GraduationCap className="w-4 h-4 text-white" />
-            </div>
+            <Image src="/lightmodelogotlp.png" alt="TLP" width={32} height={32} className="object-contain" />
             <div className="leading-tight">
               <p className="text-xs font-bold text-gray-900">The Law Project</p>
               <p className="text-[9px] text-gray-400 uppercase tracking-wide">Admin Panel</p>
@@ -133,9 +131,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="hidden lg:flex w-60 bg-white border-r border-gray-200 flex-col fixed inset-y-0 left-0 z-10">
         <div className="px-5 py-5 border-b border-gray-200 flex-shrink-0">
           <Link href="/admin/courses" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-[#4d65ff] rounded-lg flex items-center justify-center flex-shrink-0">
-              <GraduationCap className="w-5 h-5 text-white" />
-            </div>
+            <Image src="/lightmodelogotlp.png" alt="The Law Project" width={36} height={36} className="object-contain" />
             <div className="leading-tight">
               <p className="text-sm font-bold text-gray-900">The Law Project</p>
               <p className="text-[10px] text-gray-400 uppercase tracking-wide">Admin Panel</p>

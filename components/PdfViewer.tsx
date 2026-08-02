@@ -8,9 +8,10 @@ interface Props {
   path: string;
   candidateName: string;
   onClose: () => void;
+  apiRoute?: string; // defaults to /api/course-resource
 }
 
-export default function PdfViewer({ title, path, candidateName, onClose }: Props) {
+export default function PdfViewer({ title, path, candidateName, onClose, apiRoute = "/api/course-resource" }: Props) {
   const [pages, setPages] = useState<string[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -25,7 +26,7 @@ export default function PdfViewer({ title, path, candidateName, onClose }: Props
     async function render() {
       try {
         // Fetch 1-hour signed URL from our auth-protected API route
-        const res = await fetch(`/api/course-resource?path=${encodeURIComponent(path)}`);
+        const res = await fetch(`${apiRoute}?path=${encodeURIComponent(path)}`);
         const { url, error: urlError } = await res.json();
         if (urlError || !url) throw new Error(urlError ?? "Failed to load resource");
 
@@ -122,12 +123,65 @@ export default function PdfViewer({ title, path, candidateName, onClose }: Props
     return () => { document.body.style.overflow = ""; };
   }, []);
 
+  // Block all print/save paths while viewer is open
+  useEffect(() => {
+    // 1. Block keyboard shortcuts (works for most browsers)
+    const blockKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (["p", "s", "u", "a"].includes(e.key.toLowerCase())) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    };
+    document.addEventListener("keydown", blockKey, true);
+
+    // 2. Override window.print() (blocks programmatic print calls)
+    const origPrint = window.print.bind(window);
+    window.print = () => {};
+
+    // 3. beforeprint fires just before Chrome renders the print preview.
+    //    Hiding <html> (not just body) at this moment makes the output blank
+    //    regardless of whether print was triggered by shortcut or browser menu.
+    const onBeforePrint = () => {
+      document.documentElement.style.setProperty("display", "none", "important");
+      document.documentElement.style.setProperty("visibility", "hidden", "important");
+    };
+    const onAfterPrint = () => {
+      document.documentElement.style.removeProperty("display");
+      document.documentElement.style.removeProperty("visibility");
+    };
+    window.addEventListener("beforeprint", onBeforePrint);
+    window.addEventListener("afterprint", onAfterPrint);
+
+    // 4. CSS fallback injected into <head> — catches any path that fires
+    //    @media print without a JS beforeprint event (e.g. some PDF plugins)
+    const style = document.createElement("style");
+    style.id = "tlp-print-guard";
+    style.textContent = [
+      "@media print {",
+      "  html { display: none !important; visibility: hidden !important; }",
+      "  * { display: none !important; visibility: hidden !important; }",
+      "}",
+    ].join("\n");
+    document.head.appendChild(style);
+
+    return () => {
+      document.removeEventListener("keydown", blockKey, true);
+      window.print = origPrint;
+      window.removeEventListener("beforeprint", onBeforePrint);
+      window.removeEventListener("afterprint", onAfterPrint);
+      document.getElementById("tlp-print-guard")?.remove();
+    };
+  }, []);
+
   const scrollToPage = (n: number) => {
     const el = pageRefs.current[n - 1];
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
+    <>
     <div
       className="fixed inset-0 z-50 bg-black/90 flex flex-col"
       onContextMenu={(e) => e.preventDefault()}
@@ -220,5 +274,6 @@ export default function PdfViewer({ title, path, candidateName, onClose }: Props
         )}
       </div>
     </div>
+    </>
   );
 }

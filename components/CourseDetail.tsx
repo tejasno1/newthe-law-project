@@ -136,16 +136,14 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
 
       <section className="bg-gray-50 dark:bg-gray-800 pt-28 sm:pt-28 pb-8 sm:pb-12 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-5 sm:gap-10 items-center">
-          <motion.img
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+          <img
             src={course.img}
             alt={course.title}
             className="block w-full max-w-full h-48 sm:h-96 object-cover rounded-2xl"
+            style={{ animation: "tlpSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both" }}
           />
 
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="min-w-0 w-full">
+          <div className="min-w-0 w-full" style={{ animation: "tlpSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both" }}>
             <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500 mb-3 min-w-0">
               <Link href="/course" className="hover:text-primary-600 transition-colors flex-shrink-0">Course</Link>
               <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
@@ -176,7 +174,9 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
               <span className="text-sm sm:text-lg text-gray-400 line-through">₹{course.oldPrice}</span>
             </div>
 
-            {isEnrolled ? (
+            {!enrollChecked ? (
+              <div className="w-full h-11 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+            ) : isEnrolled ? (
               <a href={`/course/${course.slug}/learn`}
                 className="w-full bg-primary-600 text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2">
                 Start Learning
@@ -184,13 +184,13 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
             ) : (
               <button
                 onClick={handleEnroll}
-                disabled={paying || !enrollChecked}
+                disabled={paying}
                 className="w-full bg-black text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {paySuccess ? "✓ Payment Successful! Redirecting…" : paying ? "Processing…" : "Enroll now"}
               </button>
             )}
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -288,7 +288,9 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
                   </li>
                 ))}
               </ul>
-              {isEnrolled ? (
+              {!enrollChecked ? (
+                <div className="w-full h-10 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+              ) : isEnrolled ? (
                 <a href={`/course/${course.slug}/learn`}
                   className="w-full bg-primary-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2">
                   Start Learning
@@ -296,7 +298,7 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
               ) : (
                 <button
                   onClick={handleEnroll}
-                  disabled={paying || !enrollChecked}
+                  disabled={paying}
                   className="w-full bg-primary-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {paySuccess ? "✓ Redirecting…" : paying ? "Processing…" : <> Enroll now <ArrowRight className="w-4 h-4" /> </>}

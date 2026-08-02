@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import type { Course, CourseModuleItem } from "@/lib/courses";
 import {
-  GraduationCap, ChevronRight, ChevronLeft, Play, Pause, BookOpen,
+  ChevronRight, ChevronLeft, Play, Pause, BookOpen,
   Clock, Bookmark, MoreHorizontal, CheckCircle2,
   FileText, StickyNote, Maximize2, Minimize2,
   Check, Settings, Volume2, VolumeX, Eye,
@@ -117,36 +117,7 @@ export default function CourseLearning({
 
   const [saved, setSaved] = useState<Set<number>>(new Set());
 
-  // Lesson completion — keyed by "moduleIndex-lessonIndex"
-  const [completed, setCompleted] = useState<Set<string>>(new Set());
-  const [markingDone, setMarkingDone] = useState(false);
-
-  useEffect(() => {
-    fetch(`/api/lesson-progress?courseSlug=${course.slug}`)
-      .then(r => r.json())
-      .then(({ completed: rows }) => {
-        if (Array.isArray(rows)) {
-          setCompleted(new Set(rows.map((r: { module_index: number; lesson_index: number }) => `${r.module_index}-${r.lesson_index}`)));
-        }
-      })
-      .catch(() => {});
-  }, [course.slug]);
-
   const currentLesson = lessons[currentIndex];
-  const currentKey = currentLesson ? `${currentLesson.moduleIndex}-${currentLesson.lessonIndex}` : "";
-  const isCurrentDone = completed.has(currentKey);
-
-  const markComplete = async () => {
-    if (!currentLesson || isCurrentDone || markingDone) return;
-    setMarkingDone(true);
-    await fetch("/api/lesson-progress", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ courseSlug: course.slug, moduleIndex: currentLesson.moduleIndex, lessonIndex: currentLesson.lessonIndex }),
-    }).catch(() => {});
-    setCompleted(prev => new Set(prev).add(currentKey));
-    setMarkingDone(false);
-  };
 
   // Watermark: random position that shifts every 5 s, only on video lessons
   const [wmPos, setWmPos] = useState({ top: 15, left: 15 });
@@ -279,10 +250,8 @@ export default function CourseLearning({
       {/* ── Top bar ───────────────────────────────────────── */}
       <header className="h-14 border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 bg-white sticky top-0 z-30 flex-shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/course" className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-7 h-7 bg-primary-600 rounded-lg flex items-center justify-center">
-              <GraduationCap className="w-4 h-4 text-white" />
-            </div>
+          <Link href="/course" className="flex items-center gap-1.5 flex-shrink-0">
+            <img src="/lightmodelogotlp.png" alt="The Law Project" className="h-7 w-auto object-contain" />
             <span className="text-sm font-bold text-gray-900">The Law Project</span>
           </Link>
 
@@ -300,7 +269,7 @@ export default function CourseLearning({
           </nav>
         </div>
 
-        {/* Desktop prev/next + mark complete */}
+        {/* Desktop prev/next */}
         <div className="hidden sm:flex items-center gap-2">
           <button
             onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
@@ -308,18 +277,6 @@ export default function CourseLearning({
             className="flex items-center gap-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-3.5 h-3.5" /> Prev
-          </button>
-          <button
-            onClick={markComplete}
-            disabled={isCurrentDone || markingDone}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-              isCurrentDone
-                ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                : "bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-60"
-            }`}
-          >
-            <Check className="w-3.5 h-3.5" />
-            {isCurrentDone ? "Completed" : markingDone ? "Saving…" : "Mark Complete"}
           </button>
           <button
             onClick={() => setCurrentIndex((i) => Math.min(lessons.length - 1, i + 1))}
@@ -341,22 +298,6 @@ export default function CourseLearning({
             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Course Content</p>
           </div>
 
-          {/* Progress pill */}
-          <div className="px-4 py-3 border-b border-gray-50 flex-shrink-0">
-            <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
-              <span>{completed.size} / {lessons.length} completed</span>
-              <span className="font-medium text-primary-600">
-                {Math.round((completed.size / lessons.length) * 100)}%
-              </span>
-            </div>
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-                style={{ width: `${(completed.size / lessons.length) * 100}%` }}
-              />
-            </div>
-          </div>
-
           {/* Lesson list */}
           <div className="flex-1 overflow-y-auto py-2">
             {course.modules.map((mod, mi) => {
@@ -368,7 +309,6 @@ export default function CourseLearning({
                   </p>
                   {moduleLessons.map((lesson) => {
                     const isActive = lesson.globalIndex === currentIndex;
-                    const isDone = completed.has(`${lesson.moduleIndex}-${lesson.lessonIndex}`);
                     return (
                       <button
                         key={lesson.globalIndex}
@@ -380,15 +320,9 @@ export default function CourseLearning({
                         }`}
                       >
                         <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                          isDone
-                            ? "bg-emerald-100"
-                            : isActive
-                            ? "bg-primary-100"
-                            : "bg-gray-100"
+                          isActive ? "bg-primary-100" : "bg-gray-100"
                         }`}>
-                          {isDone ? (
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          ) : lesson.type === "video" ? (
+                          {lesson.type === "video" ? (
                             <Play className={`w-2.5 h-2.5 ${isActive ? "text-primary-600" : "text-gray-400"}`} />
                           ) : (
                             <BookOpen className={`w-2.5 h-2.5 ${isActive ? "text-primary-600" : "text-gray-400"}`} />
@@ -396,7 +330,7 @@ export default function CourseLearning({
                         </div>
                         <div className="min-w-0">
                           <p className={`text-xs font-medium leading-snug truncate ${
-                            isActive ? "text-primary-700" : isDone ? "text-gray-500" : "text-gray-800"
+                            isActive ? "text-primary-700" : "text-gray-800"
                           }`}>
                             {lesson.item.title}
                           </p>
@@ -924,28 +858,16 @@ export default function CourseLearning({
         <button
           onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
           disabled={!canPrev}
-          className="flex items-center justify-center gap-1.5 border border-gray-200 rounded-xl py-2.5 px-3 text-sm font-medium text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center justify-center gap-1.5 border border-gray-200 rounded-xl py-2.5 px-4 text-sm font-medium text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
         <button
-          onClick={markComplete}
-          disabled={isCurrentDone || markingDone}
-          className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-medium transition-colors ${
-            isCurrentDone
-              ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-              : "bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-60"
-          }`}
-        >
-          <Check className="w-4 h-4" />
-          {isCurrentDone ? "Completed" : markingDone ? "Saving…" : "Mark Complete"}
-        </button>
-        <button
           onClick={() => setCurrentIndex((i) => Math.min(lessons.length - 1, i + 1))}
           disabled={!canNext}
-          className="flex items-center justify-center gap-1.5 bg-primary-600 text-white rounded-xl py-2.5 px-3 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="flex-1 flex items-center justify-center gap-1.5 bg-primary-600 text-white rounded-xl py-2.5 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          <ChevronRight className="w-4 h-4" />
+          Next <ChevronRight className="w-4 h-4" />
         </button>
       </div>
     </div>

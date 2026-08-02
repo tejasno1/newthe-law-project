@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 import Link from "next/link";
 import type { BlogPost } from "@/lib/blogs";
 import { LayoutGrid, BookOpen, Scale, FileText, ClipboardList, Clock } from "lucide-react";
@@ -47,22 +46,8 @@ export default function BlogCatalog({ posts }: { posts: BlogPost[] }) {
     : posts.filter((p) => p.category === activeCategory);
 
   return (
-    <section className="bg-white dark:bg-gray-900 pt-28 sm:pt-32 pb-14 sm:pb-20">
+    <section className="bg-white dark:bg-gray-900 pt-8 sm:pt-10 pb-14 sm:pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-        {/* Heading */}
-        <div className="text-center max-w-2xl mx-auto mt-6 sm:mt-4 mb-6 sm:mb-10">
-          <p className="text-[10px] sm:text-xs font-bold tracking-widest text-primary-600 uppercase mb-2 sm:mb-3">
-            News, Analysis &amp; Career Roadmaps
-          </p>
-          <h1 className="text-[22px] sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 leading-tight">
-            Your guide to become a{" "}
-            <span className="text-gradient">complete lawyer</span>
-          </h1>
-          <p className="text-xs sm:text-base text-gray-500 dark:text-gray-400">
-            Staying ahead in the legal field — one article at a time.
-          </p>
-        </div>
 
         {/* Category filter chips */}
         <div className="flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0 justify-start sm:justify-center gap-2.5 mb-10 pb-1 sm:pb-0">
@@ -94,12 +79,9 @@ export default function BlogCatalog({ posts }: { posts: BlogPost[] }) {
             {filtered.map((post, i) => {
               const coverIdx = posts.findIndex((p) => p.slug === post.slug);
               return (
-                <motion.div
+                <div
                   key={post.slug}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: (i % 6) * 0.06, duration: 0.4 }}
+                  style={{ animation: `tlpSlideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) ${(i % 6) * 0.06}s both` }}
                 >
                   <Link
                     href={`/blogs/${post.slug}`}
@@ -146,7 +128,7 @@ export default function BlogCatalog({ posts }: { posts: BlogPost[] }) {
                       </div>
                     </div>
                   </Link>
-                </motion.div>
+                </div>
               );
             })}
           </div>

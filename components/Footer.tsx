@@ -8,7 +8,7 @@ const socialLinks = [
   { icon: Instagram, href: "#", label: "Instagram" },
   { icon: Twitter, href: "#", label: "X (Twitter)" },
   { icon: Youtube, href: "#", label: "YouTube" },
-  { icon: Mail, href: "mailto:hello@thelawproject.com", label: "Email" },
+  { icon: Mail, href: "mailto:thelawproject.in@gmail.com", label: "Email" },
 ];
 
 const navLinks = [
@@ -18,7 +18,9 @@ const navLinks = [
   { label: "Blogs", href: "/blogs" },
   { label: "Practice Test", href: "/mock-test" },
   { label: "FAQs", href: "/#faqs" },
+  { label: "Contact Us", href: "/contact" },
   { label: "Terms & Conditions", href: "/terms" },
+  { label: "Privacy Policy", href: "/privacy" },
   { label: "Refund Policy", href: "/refund" },
 ];
 

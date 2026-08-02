@@ -107,7 +107,7 @@ export default function TermsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-2">Legal</p>
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">Terms of use & service agreement</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated: [●] &nbsp;·&nbsp; Effective upon acceptance</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated: July 2025 &nbsp;·&nbsp; Effective upon acceptance</p>
         </div>
       </div>
 
@@ -462,10 +462,10 @@ export default function TermsPage() {
             <H2 id="contact">58. Contact information</H2>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 text-sm text-gray-600 dark:text-gray-400 space-y-1">
               <p className="font-semibold text-gray-900 dark:text-white mb-2">The Law Project</p>
-              <p>Email: ____________</p>
-              <p>Website: ____________</p>
-              <p>Contact Number: ____________</p>
-              <p>Registered Address: ____________</p>
+              <p><span className="font-medium text-gray-700 dark:text-gray-300">Email:</span> thelawproject.in@gmail.com</p>
+              <p><span className="font-medium text-gray-700 dark:text-gray-300">Website:</span> www.thelawproject.in</p>
+              <p><span className="font-medium text-gray-700 dark:text-gray-300">Contact Number:</span> +91 99502 36296</p>
+              <p><span className="font-medium text-gray-700 dark:text-gray-300">Registered Address:</span> G-6, Ground Floor, Lily Mangalam, Mangalam Anand Appartment, Sanganer Muhana, Jaipur, Rajasthan, India</p>
             </div>
 
             {/* 59 */}
@@ -479,7 +479,7 @@ export default function TermsPage() {
             <div className="mt-12 pt-8 border-t border-gray-100 dark:border-gray-700">
               <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800 rounded-xl px-6 py-5">
                 <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                  <strong>Effective Date:</strong> ______________________<br /><br />
+                  <strong>Effective Date:</strong> July 2025<br /><br />
                   By creating an account, enrolling in any Course, purchasing any Product or otherwise using the Platform, the User acknowledges that he or she has read, understood and agreed to be bound by these Terms of Use, Service Agreement & User Policy.
                 </p>
                 <p className="text-xs text-gray-500 mt-4">© The Law Project. All Rights Reserved.</p>

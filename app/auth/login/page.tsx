@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect, Suspense } from "react";
-// useRef kept for timerRef
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Mail, RotateCcw } from "lucide-react";
+import { ArrowRight, Mail, RotateCcw, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -37,10 +36,18 @@ function LoginForm() {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [countdown, setCountdown] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Session conflict modal
+  const [conflictModal, setConflictModal] = useState(false);
+  const [previousDevice, setPreviousDevice] = useState("");
+  const [kickingOut, setKickingOut] = useState(false);
+
+  // Show "kicked" message if redirected from SessionGuard
+  const wasKicked = searchParams.get("reason") === "kicked";
+  const wantsResource = searchParams.get("reason") === "resource";
 
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -96,8 +103,45 @@ function LoginForm() {
       token: code.trim(),
       type: "email",
     });
+    if (error) { setVerifying(false); setError("Incorrect or expired code. Please try again."); return; }
+
+    // Check for an existing session on another device
+    const sessionRes = await fetch("/api/session", { method: "POST" }).catch(() => null);
     setVerifying(false);
-    if (error) { setError("Incorrect or expired code. Please try again."); return; }
+
+    if (!sessionRes || !sessionRes.ok) {
+      // Couldn't check — just proceed
+      router.push(redirectTo);
+      router.refresh();
+      return;
+    }
+
+    const sessionData = await sessionRes.json();
+    if (sessionData.conflict) {
+      setPreviousDevice(sessionData.previousDevice);
+      setConflictModal(true);
+      return;
+    }
+
+    localStorage.setItem("tlp_session_token", sessionData.token);
+    router.push(redirectTo);
+    router.refresh();
+  };
+
+  const handleCancelConflict = async () => {
+    setConflictModal(false);
+    await supabase.auth.signOut();
+  };
+
+  const handleConfirmKick = async () => {
+    setKickingOut(true);
+    const res = await fetch("/api/session", { method: "PUT" }).catch(() => null);
+    setKickingOut(false);
+    setConflictModal(false);
+    if (res?.ok) {
+      const { token } = await res.json();
+      localStorage.setItem("tlp_session_token", token);
+    }
     router.push(redirectTo);
     router.refresh();
   };
@@ -114,12 +158,6 @@ function LoginForm() {
     });
     if (error) { setError(friendlyError(error.message)); return; }
     startCountdown();
-  };
-
-  const handleGoogle = async () => {
-    setGoogleLoading(true);
-    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
-    await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: callbackUrl } });
   };
 
   return (
@@ -148,6 +186,18 @@ function LoginForm() {
                   <p className="mt-1 text-xs text-white/50">Enter your email — we'll send a verification code</p>
                 </div>
 
+                {wantsResource && (
+                  <div className="bg-primary-500/20 border border-primary-400/30 rounded-xl px-4 py-3 text-sm text-primary-200 text-center">
+                    Please sign in to view this resource.
+                  </div>
+                )}
+
+                {wasKicked && (
+                  <div className="bg-amber-500/20 border border-amber-400/30 rounded-xl px-4 py-3 text-sm text-amber-200 text-center">
+                    You were signed out because your account was accessed from another device.
+                  </div>
+                )}
+
                 <form onSubmit={handleSendCode} className="space-y-4">
                   <div>
                     <label className="block text-xs font-medium text-white/50 mb-1.5">Email address</label>
@@ -172,23 +222,6 @@ function LoginForm() {
                     </div>
                   </motion.button>
 
-                  <div className="relative flex items-center pt-1">
-                    <div className="flex-grow border-t border-white/[0.08]" />
-                    <span className="flex-shrink mx-4 text-white/30 text-xs tracking-wider">OR</span>
-                    <div className="flex-grow border-t border-white/[0.08]" />
-                  </div>
-
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                    type="button" onClick={handleGoogle} disabled={googleLoading}
-                    className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 bg-white/90 hover:bg-white disabled:opacity-60 rounded-xl text-gray-700 font-semibold transition-all duration-300">
-                    <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 48 48">
-                      <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039L38.802 8.841C34.553 4.806 29.613 2.5 24 2.5C11.983 2.5 2.5 11.983 2.5 24s9.483 21.5 21.5 21.5S45.5 36.017 45.5 24c0-1.538-.135-3.022-.389-4.417z" />
-                      <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12.5 24 12.5c3.059 0 5.842 1.154 7.961 3.039l5.839-5.841C34.553 4.806 29.613 2.5 24 2.5C16.318 2.5 9.642 6.723 6.306 14.691z" />
-                      <path fill="#4CAF50" d="M24 45.5c5.613 0 10.553-2.306 14.802-6.341l-5.839-5.841C30.842 35.846 27.059 38 24 38c-5.039 0-9.345-2.608-11.124-6.481l-6.571 4.819C9.642 41.277 16.318 45.5 24 45.5z" />
-                      <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l5.839 5.841C44.196 35.123 45.5 29.837 45.5 24c0-1.538-.135-3.022-.389-4.417z" />
-                    </svg>
-                    {googleLoading ? "Redirecting…" : "Continue with Google"}
-                  </motion.button>
                 </form>
 
                 <p className="text-center text-xs text-white/30">
@@ -257,6 +290,58 @@ function LoginForm() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* ── Session conflict modal ────────────────────────── */}
+      <AnimatePresence>
+        {conflictModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-sm bg-gray-950 border border-white/10 rounded-2xl shadow-2xl p-6 space-y-5"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold text-base">Already signed in</h3>
+                  <p className="text-white/50 text-sm mt-1">
+                    Your account is currently active on <span className="text-white/80 font-medium">{previousDevice}</span>.
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-white/60 text-sm leading-relaxed">
+                Signing in here will immediately log out the other device. Do you want to continue?
+              </p>
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={handleCancelConflict}
+                  className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/60 hover:text-white hover:bg-white/5 text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmKick}
+                  disabled={kickingOut}
+                  className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 disabled:opacity-60 text-white text-sm font-semibold transition-colors"
+                >
+                  {kickingOut ? "Signing in…" : "Sign in here"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

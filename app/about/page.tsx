@@ -19,7 +19,7 @@ export default function AboutPage() {
       <Navbar />
 
       {/* ── Hero ── */}
-      <section className="bg-gray-50 dark:bg-gray-800 pt-28 sm:pt-24 pb-10 sm:pb-16 border-b border-gray-100 dark:border-gray-700">
+      <section className="bg-gray-50 dark:bg-gray-800 pt-28 lg:pt-24 pb-10 sm:pb-16 border-b border-gray-100 dark:border-gray-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div {...fadeUp(0)} className="flex justify-center mb-4 sm:mb-6">
             <span className="inline-flex items-center gap-2 text-xs font-medium bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2 shadow-sm text-gray-600 dark:text-gray-400">

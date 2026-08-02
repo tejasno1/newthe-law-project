@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowRight, Star,
@@ -65,11 +64,9 @@ function PlanDropdown({ value, onChange }: { value: string; onChange: (v: string
       </button>
 
       {open && (
-        <motion.div
-          initial={{ opacity: 0, y: 6, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.15 }}
+        <div
           className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl shadow-black/10 py-1.5 min-w-[200px] z-30"
+          style={{ animation: "tlpSlideUp 0.15s cubic-bezier(0.22, 1, 0.36, 1) both" }}
         >
           {ACCESS_OPTIONS.map((opt) => (
             <button
@@ -83,7 +80,7 @@ function PlanDropdown({ value, onChange }: { value: string; onChange: (v: string
               {value === opt.value && <Check className="w-3.5 h-3.5" />}
             </button>
           ))}
-        </motion.div>
+        </div>
       )}
     </div>
   );
@@ -142,17 +139,9 @@ const CourseHero = ({
   const activeCatName = activeCategory;
 
   return (
-    <section className="bg-white dark:bg-gray-900 pt-28 sm:pt-28 pb-12 sm:pb-20">
+    <section className="bg-white dark:bg-gray-900 pt-8 sm:pt-10 pb-12 sm:pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mt-6 sm:mt-0 mb-6 sm:mb-10">
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-            Explore all courses &amp;<br className="sm:hidden" /> <span className="text-gradient">learning paths</span>
-          </h1>
-          <p className="text-xs sm:text-base text-gray-500 dark:text-gray-400">
-            Discover practical, career-focused legal courses carefully built to help you crack exams, land internships, and build real skills.
-          </p>
-        </div>
+
 
         {/* Category chips */}
         <div className="flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0 justify-start sm:justify-center gap-2.5 mb-5 pb-1 sm:pb-0">
@@ -187,12 +176,9 @@ const CourseHero = ({
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCourses.map((course, i) => (
-              <motion.div
+              <div
                 key={course.slug}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: (i % 6) * 0.06, duration: 0.4 }}
+                style={{ animation: `tlpSlideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) ${(i % 6) * 0.06}s both` }}
               >
                 <Link
                   href={`/course/${course.slug}`}
@@ -249,7 +235,7 @@ const CourseHero = ({
                     </div>
                   </div>
                 </Link>
-              </motion.div>
+              </div>
             ))}
           </div>
         )}

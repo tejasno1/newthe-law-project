@@ -15,12 +15,12 @@ export default async function MockTestPage() {
 
       <PageHeroBanner
         title="Practice Tests"
-        subtitle="Attempt full-length and sectional tests under real exam conditions and get a detailed performance report."
+        subtitle="Build confidence with exam-style mock tests designed to strengthen your preparation and improve your performance."
         variant="tests"
       />
 
       <section className="pt-8 pb-20 bg-white dark:bg-gray-900">
-        <div className="max-w-[88rem] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <MockTestCatalog tests={tests} />
         </div>
       </section>

@@ -43,6 +43,22 @@ h1, h2, h3, h4, h5, h6 {
   animation: marquee 20s linear infinite;
 }
 
+@keyframes tlpFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+@keyframes tlpFadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0);  }
+}
+@keyframes tlpGrow {
+  to { width: 89%; }
+}
+@keyframes tlpSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ── DotCard (moving-dot-card) ──────────────────────────────────── */
 
 .outer {

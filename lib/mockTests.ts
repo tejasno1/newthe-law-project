@@ -1,5 +1,14 @@
 import { supabaseService } from "@/lib/supabase/service";
 
+// ── Passage type (safe for client) ────────────────────────────────────────────
+export interface Passage {
+  id: number;
+  passageNumber: number;
+  title?: string;
+  text: string;
+  source?: string;
+}
+
 // Full question type — SERVER ONLY. Never send to the browser.
 export interface MockQuestion {
   id: number;
@@ -7,6 +16,7 @@ export interface MockQuestion {
   options: string[];
   correctIndex: number;
   subject?: string;
+  passageId?: number; // references passages.id
 }
 
 // Safe question type — correctIndex stripped before sending to client.
@@ -15,6 +25,7 @@ export interface MockQuestionSafe {
   text: string;
   options: string[];
   subject?: string;
+  passageId?: number;
 }
 
 export interface MockTest {
@@ -33,6 +44,8 @@ export interface MockTest {
   negativeMark: number;
   isFree: boolean;
   price: number;
+  testType: "normal" | "passage_based";
+  passages?: Passage[];
   questions: MockQuestion[]; // server-only, never passed to client components
 }
 
@@ -57,6 +70,7 @@ interface MockTestRow {
   negative_mark: number | string;
   is_free: boolean | null;
   price: number | string | null;
+  test_type: string | null;
 }
 
 interface QuestionRow {
@@ -68,6 +82,15 @@ interface QuestionRow {
   option_d: string;
   correct_answer: string;
   subject: string | null;
+  passage_id: number | null;
+}
+
+interface PassageRow {
+  id: number;
+  passage_number: number;
+  title: string | null;
+  text: string;
+  source: string | null;
 }
 
 const toNumber = (v: number | string) => (typeof v === "number" ? v : parseFloat(v) || 0);
@@ -81,7 +104,7 @@ const correctAnswerToIndex = (a: string): number => {
   return { A: 0, B: 1, C: 2, D: 3 }[a?.toUpperCase()] ?? 0;
 };
 
-const mapRow = (row: MockTestRow, questions: MockQuestion[] = []): MockTest => ({
+const mapRow = (row: MockTestRow, questions: MockQuestion[] = [], passages: Passage[] = []): MockTest => ({
   slug: row.slug,
   title: row.title,
   section: row.section,
@@ -97,6 +120,8 @@ const mapRow = (row: MockTestRow, questions: MockQuestion[] = []): MockTest => (
   negativeMark: toNumber(row.negative_mark),
   isFree: row.is_free ?? false,
   price: toNumber(row.price ?? 0),
+  testType: row.test_type === "passage_based" ? "passage_based" : "normal",
+  passages: passages.length > 0 ? passages : undefined,
   questions,
 });
 
@@ -106,6 +131,15 @@ const mapQuestionRow = (row: QuestionRow): MockQuestion => ({
   options: [row.option_a, row.option_b, row.option_c, row.option_d],
   correctIndex: correctAnswerToIndex(row.correct_answer),
   ...(row.subject ? { subject: row.subject } : {}),
+  ...(row.passage_id ? { passageId: row.passage_id } : {}),
+});
+
+const mapPassageRow = (row: PassageRow): Passage => ({
+  id: row.id,
+  passageNumber: row.passage_number,
+  ...(row.title ? { title: row.title } : {}),
+  text: row.text,
+  ...(row.source ? { source: row.source } : {}),
 });
 
 const toSafe = (test: MockTest): MockTestSafe => ({
@@ -113,31 +147,62 @@ const toSafe = (test: MockTest): MockTestSafe => ({
   questions: test.questions.map(({ correctIndex: _stripped, ...q }) => q),
 });
 
-// Fetch all questions for a single test from mock_test_questions table
+const TEST_SELECT =
+  "slug, title, section, category, duration_minutes, total_questions, total_marks, attempted_label, language, difficulty, recent_attempt_line, marks_per_correct, negative_mark, is_free, price, test_type";
+
+const TEST_SELECT_FALLBACK =
+  "slug, title, section, category, duration_minutes, total_questions, total_marks, attempted_label, language, difficulty, recent_attempt_line, marks_per_correct, negative_mark, is_free, price";
+
 async function fetchTestQuestions(slug: string): Promise<MockQuestion[]> {
-  const { data } = await supabaseService
+  const { data, error } = await supabaseService
     .from("mock_test_questions")
-    .select("question_number, question, option_a, option_b, option_c, option_d, correct_answer, subject")
+    .select("question_number, question, option_a, option_b, option_c, option_d, correct_answer, subject, passage_id")
     .eq("test_slug", slug)
     .order("question_number", { ascending: true });
+
+  if (error) {
+    // passage_id column may not exist yet — fall back without it
+    const { data: fallback } = await supabaseService
+      .from("mock_test_questions")
+      .select("question_number, question, option_a, option_b, option_c, option_d, correct_answer, subject")
+      .eq("test_slug", slug)
+      .order("question_number", { ascending: true });
+    return (fallback ?? []).map((row) => mapQuestionRow({ ...(row as Omit<QuestionRow, "passage_id">), passage_id: null }));
+  }
 
   return (data ?? []).map((row) => mapQuestionRow(row as QuestionRow));
 }
 
-// ── Public API ───────────────────────────────────────────────────
+async function fetchPassages(slug: string): Promise<Passage[]> {
+  const { data } = await supabaseService
+    .from("passages")
+    .select("id, passage_number, title, text, source")
+    .eq("test_slug", slug)
+    .order("passage_number", { ascending: true });
 
-// Catalog list — questions not needed here, returns empty arrays
+  return (data ?? []).map((row) => mapPassageRow(row as PassageRow));
+}
+
+// ── Public API ───────────────────────────────────────────────────────────────
+
 export async function getAllMockTests(): Promise<MockTestSafe[]> {
   const { data, error } = await supabaseService
     .from("mock_tests")
-    .select("slug, title, section, category, duration_minutes, total_questions, total_marks, attempted_label, language, difficulty, recent_attempt_line, marks_per_correct, negative_mark, is_free, price")
+    .select(TEST_SELECT)
     .order("id", { ascending: true });
 
-  if (error) {
-    console.error("Failed to load mock tests:", error.message);
-    return [];
-  }
-  return (data as MockTestRow[]).map((row) => toSafe(mapRow(row, [])));
+  if (!error) return (data as MockTestRow[]).map((row) => toSafe(mapRow(row, [])));
+
+  // test_type column may not exist yet
+  const { data: fallback, error: fallbackError } = await supabaseService
+    .from("mock_tests")
+    .select(TEST_SELECT_FALLBACK)
+    .order("id", { ascending: true });
+
+  if (fallbackError) { console.error("Failed to load mock tests:", fallbackError.message); return []; }
+  return (fallback as Omit<MockTestRow, "test_type">[]).map((row) =>
+    toSafe(mapRow({ ...row, test_type: null }, []))
+  );
 }
 
 export async function getMockTestSlugs(): Promise<string[]> {
@@ -149,34 +214,49 @@ export async function getMockTestSlugs(): Promise<string[]> {
   return (data as { slug: string }[]).map((r) => r.slug);
 }
 
+async function fetchTestRow(slug: string): Promise<MockTestRow | null> {
+  const { data, error } = await supabaseService
+    .from("mock_tests")
+    .select(TEST_SELECT)
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (!error) return data as MockTestRow | null;
+
+  // test_type column may not exist yet — fall back without it
+  console.warn("fetchTestRow: falling back without test_type column:", error.message);
+  const { data: fallback, error: fallbackError } = await supabaseService
+    .from("mock_tests")
+    .select(TEST_SELECT_FALLBACK)
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (fallbackError) { console.error("Failed to load mock test:", fallbackError.message); return null; }
+  return fallback ? { ...(fallback as Omit<MockTestRow, "test_type">), test_type: null } : null;
+}
+
 // Safe version — correctIndex stripped. Use for pages that pass data to client components.
 export async function getMockTestBySlug(slug: string): Promise<MockTestSafe | null> {
-  const [{ data: testData, error }, questions] = await Promise.all([
-    supabaseService
-      .from("mock_tests")
-      .select("slug, title, section, category, duration_minutes, total_questions, total_marks, attempted_label, language, difficulty, recent_attempt_line, marks_per_correct, negative_mark, is_free, price")
-      .eq("slug", slug)
-      .maybeSingle(),
+  const [row, questions] = await Promise.all([
+    fetchTestRow(slug),
     fetchTestQuestions(slug),
   ]);
 
-  if (error) { console.error("Failed to load mock test:", error.message); return null; }
-  if (!testData) return null;
-  return toSafe(mapRow(testData as MockTestRow, questions));
+  if (!row) return null;
+
+  const passages = row.test_type === "passage_based" ? await fetchPassages(slug) : [];
+  return toSafe(mapRow(row, questions, passages));
 }
 
 // Full version (correctIndex included) — route handlers only, never expose to client.
 export async function getMockTestBySlugFull(slug: string): Promise<MockTest | null> {
-  const [{ data: testData, error }, questions] = await Promise.all([
-    supabaseService
-      .from("mock_tests")
-      .select("slug, title, section, category, duration_minutes, total_questions, total_marks, attempted_label, language, difficulty, recent_attempt_line, marks_per_correct, negative_mark, is_free, price")
-      .eq("slug", slug)
-      .maybeSingle(),
+  const [row, questions] = await Promise.all([
+    fetchTestRow(slug),
     fetchTestQuestions(slug),
   ]);
 
-  if (error) { console.error("Failed to load mock test:", error.message); return null; }
-  if (!testData) return null;
-  return mapRow(testData as MockTestRow, questions);
+  if (!row) return null;
+
+  const passages = row.test_type === "passage_based" ? await fetchPassages(slug) : [];
+  return mapRow(row, questions, passages);
 }
