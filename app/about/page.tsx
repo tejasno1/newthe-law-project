@@ -117,23 +117,23 @@ export default function AboutPage() {
           >
             <div className="grid lg:grid-cols-5">
               {/* Photo */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-2 overflow-hidden self-start">
                 <img
-                  src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=600&q=80&fit=crop"
-                  alt="Bhavtosh A."
-                  className="w-full h-72 lg:h-full object-cover object-top"
+                  src="https://ysgzglccgrqbxxxhxthe.supabase.co/storage/v1/object/sign/bannerimages/bhavtoshsiraboutus.jpeg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wZjU4YTFjNi02NmE1LTRjNWYtYWI0MS0yN2QxNjhmM2NkMDgiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJiYW5uZXJpbWFnZXMvYmhhdnRvc2hzaXJhYm91dHVzLmpwZWciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg1ODIyMzY1LCJleHAiOjIxMDExODIzNjV9.7PDLs2pa4Rf0ziZo6cVRtD-B6YcTpd6PBMUF58ouksU"
+                  alt="Bhavtosh Agrawal"
+                  className="w-full h-auto"
                 />
               </div>
 
               {/* Content */}
               <div className="lg:col-span-3 p-5 sm:p-10 lg:p-12">
                 <div className="mb-4 sm:mb-6">
-                  <h2 className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1">Bhavtosh A.</h2>
+                  <h2 className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1">Bhavtosh Agrawal</h2>
                   <p className="text-primary-600 font-semibold text-xs sm:text-sm">Law Educator · Lead Mentor · Founder, The Law Project</p>
                 </div>
 
                 <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-5">
-                  Bhavtosh A. is a Law Educator, Lead Mentor, and the Founder of The Law Project. An NLU Graduate and LL.M., he has spent more than a decade mentoring law aspirants and guiding thousands of students preparing for various Law Entrance and other law competitive examinations. Throughout his teaching journey, he has trained numerous top performers and earned the trust of students through his mentorship-driven approach to legal education.
+                  Bhavtosh Agrawal is a Law Educator, Lead Mentor, and the Founder of The Law Project. An NLU Graduate and LL.M., he has spent more than a decade mentoring law aspirants and guiding thousands of students preparing for various Law Entrance and other law competitive examinations. Throughout his teaching journey, he has trained numerous top performers and earned the trust of students through his mentorship-driven approach to legal education.
                 </p>
 
                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">His philosophy is simple:</p>

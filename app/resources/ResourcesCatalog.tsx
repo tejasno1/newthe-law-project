@@ -8,13 +8,11 @@ import type { Resource, ResourceCategory } from "@/lib/resources";
 
 const PdfViewer = dynamic(() => import("@/components/PdfViewer"), { ssr: false });
 
-// Exact pastel colours provided by the user (RGB → hex)
-// bg: card pastel area | tag: pill chip bg+text | text: title/description colour
 const PASTEL_LIST = [
-  { bg: "#DFF3FE", tag: { bg: "#BEE3F8", text: "#1A4A6B" }, text: "#1A4A6B" }, // sky blue
-  { bg: "#F6CFB3", tag: { bg: "#F0B48A", text: "#6B3010" }, text: "#6B3010" }, // peach
-  { bg: "#D6F5ED", tag: { bg: "#A8E6D8", text: "#0F4A39" }, text: "#0F4A39" }, // mint
-  { bg: "#E2DBFA", tag: { bg: "#C8BEFF", text: "#3B2A7A" }, text: "#3B2A7A" }, // lavender
+  { bg: "#DFF3FE", tag: { bg: "#BEE3F8", text: "#1A4A6B" }, text: "#1A4A6B" },
+  { bg: "#F6CFB3", tag: { bg: "#F0B48A", text: "#6B3010" }, text: "#6B3010" },
+  { bg: "#D6F5ED", tag: { bg: "#A8E6D8", text: "#0F4A39" }, text: "#0F4A39" },
+  { bg: "#E2DBFA", tag: { bg: "#C8BEFF", text: "#3B2A7A" }, text: "#3B2A7A" },
 ];
 
 function getPalette(index: number) {
@@ -64,96 +62,103 @@ export default function ResourcesCatalog({ resources, categories, candidateName,
         />
       )}
 
-      <section id="resources" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <section id="resources" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12 sm:pt-10 sm:pb-16 lg:pb-20">
 
         {/* Section header */}
-        <div className="mb-8 sm:mb-10">
-          <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-primary-600 dark:text-primary-400 mb-1">Study Materials</p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1">All Resources</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="mb-5 sm:mb-8">
+          <p className="text-[10px] sm:text-[11px] font-bold tracking-[0.2em] uppercase text-primary-600 dark:text-primary-400 mb-1">
+            Study Materials
+          </p>
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-1">
+            All Resources
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             {resources.length > 0
               ? `${resources.length} resource${resources.length !== 1 ? "s" : ""} available — read securely in your browser.`
               : "Resources are being uploaded. Check back soon."}
           </p>
         </div>
 
-        {/* Search + filter bar */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-10">
-          <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search resources…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-colors"
-            />
-          </div>
-
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => setActiveCategory("all")}
-              className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap ${
-                activeCategory === "all"
-                  ? "bg-primary-600 text-white shadow-sm"
-                  : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary-400 hover:text-primary-600"
-              }`}
-            >
-              All
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap ${
-                  activeCategory === cat.id
-                    ? "bg-primary-600 text-white shadow-sm"
-                    : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary-400 hover:text-primary-600"
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
+        {/* Search — full width on mobile */}
+        <div className="relative mb-4 sm:mb-5 sm:max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search resources…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full pl-8 sm:pl-9 pr-4 py-2 sm:py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-colors"
+          />
         </div>
 
-        {/* Pastel grid */}
+        {/* Filter chips — horizontal scroll on mobile, wrap on desktop */}
+        <div className="flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0 gap-2 mb-6 sm:mb-8 pb-1 sm:pb-0">
+          <button
+            onClick={() => setActiveCategory("all")}
+            className={`flex-shrink-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+              activeCategory === "all"
+                ? "bg-primary-600 text-white shadow-sm"
+                : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
+            }`}
+          >
+            All
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={`flex-shrink-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+                activeCategory === cat.id
+                  ? "bg-primary-600 text-white shadow-sm"
+                  : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Grid — 2 cols on mobile, 2 on sm, 3 on lg, 4 on xl */}
         {filtered.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
             {filtered.map((r, i) => {
               const pal = getPalette(i);
               const catName = r.resource_categories?.name ?? "";
               const hasPdf = !!r.file_path;
-
-              // Build tag chips: category + free/paid
-              const tags = [
-                catName || null,
-                r.is_free ? "Free" : "Premium",
-              ].filter(Boolean) as string[];
+              const tags = [catName || null, r.is_free ? "Free" : "Premium"].filter(Boolean) as string[];
 
               return (
                 <div
                   key={r.id}
-                  className="group bg-white rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col p-3"
+                  className="group bg-white rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 sm:hover:-translate-y-1 transition-all duration-300 flex flex-col p-2 sm:p-3"
                 >
-                  {/* Pastel inset area — white shows on all 4 sides */}
-                  <div className="rounded-lg p-5 flex-1 flex flex-col" style={{ backgroundColor: pal.bg }}>
-                    <h3 className="font-bold text-xl leading-snug mb-2" style={{ color: pal.text }}>
+                  {/* Pastel inset area */}
+                  <div
+                    className="rounded-lg p-3 sm:p-5 flex-1 flex flex-col"
+                    style={{ backgroundColor: pal.bg }}
+                  >
+                    <h3
+                      className="font-bold text-sm sm:text-base lg:text-xl leading-snug mb-1.5 sm:mb-2 line-clamp-2"
+                      style={{ color: pal.text }}
+                    >
                       {r.title}
                     </h3>
 
                     {r.description && (
-                      <p className="text-sm leading-relaxed mb-4 line-clamp-2" style={{ color: pal.text, opacity: 0.7 }}>
+                      <p
+                        className="text-[11px] sm:text-xs lg:text-sm leading-relaxed mb-3 sm:mb-4 line-clamp-2 hidden xs:block sm:block"
+                        style={{ color: pal.text, opacity: 0.7 }}
+                      >
                         {r.description}
                       </p>
                     )}
 
                     {/* Pill tags */}
-                    <div className="flex flex-wrap gap-2 mt-auto pt-2">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-auto pt-1.5 sm:pt-2">
                       {tags.map((tag) => (
                         <span
                           key={tag}
-                          className="text-xs font-medium px-3 py-1.5 rounded-full"
+                          className="text-[10px] sm:text-xs font-medium px-2 py-1 sm:px-3 sm:py-1.5 rounded-full"
                           style={{ backgroundColor: pal.tag.bg, color: pal.tag.text }}
                         >
                           {tag}
@@ -162,12 +167,12 @@ export default function ResourcesCatalog({ resources, categories, candidateName,
                     </div>
                   </div>
 
-                  {/* White footer with generous spacing */}
-                  <div className="px-3 pt-4 pb-2 flex items-center justify-between">
+                  {/* White footer */}
+                  <div className="px-1.5 sm:px-3 pt-3 sm:pt-4 pb-1.5 sm:pb-2 flex items-center justify-between">
                     <button
                       onClick={() => openResource(r)}
                       disabled={!hasPdf}
-                      className={`text-sm font-bold transition-colors ${
+                      className={`text-xs sm:text-sm font-bold transition-colors ${
                         hasPdf ? "text-gray-900 hover:text-gray-600" : "text-gray-400 cursor-not-allowed"
                       }`}
                     >
@@ -177,13 +182,11 @@ export default function ResourcesCatalog({ resources, categories, candidateName,
                       onClick={() => openResource(r)}
                       disabled={!hasPdf}
                       style={{ backgroundColor: "#F5F5F5" }}
-                      className={`w-8 h-8 rounded-md flex items-center justify-center transition-all ${
-                        hasPdf
-                          ? "text-gray-700 group-hover:translate-x-0.5"
-                          : "text-gray-300 cursor-not-allowed"
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-md flex items-center justify-center transition-all flex-shrink-0 ${
+                        hasPdf ? "text-gray-700 group-hover:translate-x-0.5" : "text-gray-300 cursor-not-allowed"
                       }`}
                     >
-                      <ArrowRight className="w-4 h-4" />
+                      <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                   </div>
                 </div>
@@ -191,15 +194,16 @@ export default function ResourcesCatalog({ resources, categories, candidateName,
             })}
           </div>
         ) : (
-          <div className="text-center py-20">
-            <p className="text-gray-500 dark:text-gray-400 font-medium">No resources found</p>
-            <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Try a different search or category.</p>
+          <div className="text-center py-14 sm:py-20">
+            <p className="text-gray-500 dark:text-gray-400 font-medium text-sm sm:text-base">No resources found</p>
+            <p className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm mt-1">Try a different search or category.</p>
           </div>
         )}
 
-        <div className="mt-14 bg-primary-600 rounded-2xl px-6 py-8 sm:py-10 text-center">
-          <h3 className="text-white font-bold text-xl sm:text-2xl mb-2">More resources coming soon</h3>
-          <p className="text-primary-200 text-sm max-w-md mx-auto">
+        {/* CTA banner */}
+        <div className="mt-10 sm:mt-14 bg-primary-600 rounded-2xl px-5 py-7 sm:px-6 sm:py-10 text-center">
+          <h3 className="text-white font-bold text-lg sm:text-xl lg:text-2xl mb-2">More resources coming soon</h3>
+          <p className="text-primary-200 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
             We&apos;re adding new notes, bare acts and MCQ PDFs regularly. Bookmark this page and check back often.
           </p>
         </div>

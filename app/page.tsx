@@ -86,14 +86,14 @@ const HeroSection2 = () => {
 
   return (
     <>
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-blue-50/40 to-white dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 min-h-[580px] sm:min-h-[635px] sm:pb-40">
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-blue-50/40 to-white dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 min-h-[500px] sm:min-h-[635px] sm:pb-40 mt-4 sm:mt-6 lg:mt-0">
 
         {/* Mobile-only background image */}
         <div className="absolute inset-0 pointer-events-none select-none block sm:hidden">
           <img
             src="/tlpherosectionmobileview.png"
             alt=""
-            className="w-full h-full object-cover object-top"
+            className="w-full h-full object-cover [object-position:40%_52%]"
             draggable={false}
           />
           {/* Top overlay — covers only the text area */}
@@ -107,7 +107,7 @@ const HeroSection2 = () => {
           <img
             src="/tlpherosectionhome.svg"
             alt=""
-            className="w-full h-full object-cover object-top"
+            className="w-full h-full object-cover object-top sm:object-contain lg:object-cover"
             draggable={false}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-white/[0.96] dark:from-gray-900/[0.96] via-white/70 dark:via-gray-900/70 to-transparent [--tw-gradient-from-position:0%] [--tw-gradient-via-position:40%] [--tw-gradient-to-position:65%]" />
@@ -115,33 +115,46 @@ const HeroSection2 = () => {
 
         {/* Text content */}
         <div
-          className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-28 lg:pt-32 pb-10 sm:pb-4"
+          className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-36 lg:pt-32 pb-2 sm:pb-4"
           style={{ animation: "tlpSlideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both" }}
         >
-          <div className="max-w-xl lg:max-w-md xl:max-w-lg text-center sm:text-left">
-            <h1 className="text-xl sm:text-5xl lg:text-[76px] lg:leading-[76px] font-semibold text-gray-900 dark:text-white leading-tight mb-2 sm:mb-5 mt-6 sm:mt-0">
-              Build the Legal Career <span className="text-primary-600">You Deserve.</span>
-            </h1>
-            <p className="text-sm sm:text-lg text-gray-700 sm:text-gray-500 dark:text-gray-300 sm:dark:text-gray-400 mb-2 sm:mb-6 max-w-lg">
-              Begin your legal journey with top-tier mentorship. Explore preparation strategies designed for elite legal opportunities.
-            </p>
-            <div className="flex justify-center sm:justify-start mb-4">
-              <button className="bg-primary-600 text-white px-6 py-3 rounded-xl text-sm leading-[21px] font-medium flex items-center gap-2 hover:bg-primary-700 transition-colors">
-                Enroll now <ArrowRight className="w-4 h-4" />
-              </button>
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+
+            {/* Left: heading + body + button */}
+            <div className="max-w-xl lg:max-w-md xl:max-w-lg text-center sm:text-left">
+
+              <h1 className="text-xl sm:text-5xl lg:text-[76px] lg:leading-[76px] font-semibold text-gray-900 dark:text-white leading-tight mb-2 sm:mb-5 sm:mt-0">
+                Build the Legal Career<br className="hidden sm:inline lg:hidden" /> <span className="text-primary-600">You Deserve.</span>
+              </h1>
+              <p className="text-sm sm:text-lg text-gray-700 sm:text-gray-500 dark:text-gray-300 sm:dark:text-gray-400 mb-2 sm:mb-6 max-w-lg">
+                Begin your legal journey with top-tier mentorship. Explore preparation strategies designed for elite legal opportunities.
+              </p>
+              <div className="flex justify-center sm:justify-start">
+                <button className="bg-primary-600 text-white px-6 py-3 rounded-xl text-sm leading-[21px] font-medium flex items-center gap-2 hover:bg-primary-700 transition-colors">
+                  Enroll now <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+
             </div>
+
           </div>
+        </div>
+
+        {/* Attribution — absolutely positioned right of Bhavtosh's head on all viewports */}
+        <div className="absolute top-[63%] sm:top-[22%] lg:top-[38%] right-[9%] sm:right-[4%] lg:right-[3%] z-10">
+          <p className="text-[11px] sm:text-sm lg:text-lg font-bold italic text-gray-900 dark:text-white leading-tight">Bhavtosh Agrawal</p>
+          <p className="text-[8px] sm:text-[9px] lg:text-[11px] text-gray-600 dark:text-gray-400 -mt-0.5 sm:max-w-[80px] lg:max-w-none">NLU Graduate · Founder,<br className="sm:hidden" /> The Law Project</p>
         </div>
 
       </section>
 
       {/* Stat cards — overlap on desktop, slight pull-up on mobile */}
-      <div className="relative z-20 -mt-16 sm:-mt-44 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-        <div ref={statsRef} className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
+      <div className="relative z-20 -mt-16 sm:-mt-56 lg:-mt-44 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+        <div ref={statsRef} className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
           {stats.map((stat, i) => (
             <div
               key={i}
-              className={`rounded-2xl px-4 py-4 sm:px-6 sm:py-6 shadow-lg ${
+              className={`rounded-2xl px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6 shadow-lg ${
                 stat.primary
                   ? "bg-primary-600"
                   : i === 0
@@ -151,10 +164,10 @@ const HeroSection2 = () => {
                   : "bg-gray-200/80 dark:bg-gray-600/80"
               }`}
             >
-              <p className={`text-xl sm:text-3xl lg:text-4xl font-bold mb-1 leading-tight ${stat.primary ? "text-white" : "text-gray-900 dark:text-white"}`}>
+              <p className={`text-xl sm:text-2xl lg:text-4xl font-bold mb-0.5 leading-tight ${stat.primary ? "text-white" : "text-gray-900 dark:text-white"}`}>
                 <CountUp end={stat.end} suffix={stat.suffix} inView={statsInView} />
               </p>
-              <p className={`text-xs sm:text-sm ${stat.primary ? "text-primary-100" : "text-gray-500 dark:text-gray-400"}`}>
+              <p className={`text-xs sm:text-xs lg:text-sm ${stat.primary ? "text-primary-100" : "text-gray-500 dark:text-gray-400"}`}>
                 {stat.label}
               </p>
             </div>
@@ -162,6 +175,125 @@ const HeroSection2 = () => {
         </div>
       </div>
     </>
+  );
+};
+
+const GrandLaunchSection = () => {
+  const COURSE = {
+    category: "CLAT PG",
+    title: "CLAT PG Mastery — Independence Day Edition",
+    instructor: "Bhavtosh Agrawal",
+    description: "A flagship programme launching on Independence Day — bringing together structured curriculum, live mentorship, and real exam-ready content for serious law aspirants preparing for CLAT PG, Judiciary & AIBE.",
+    bullets: [
+      "Live classes + recorded lectures, accessible anytime",
+      "Designed by practising lawyers & faculty",
+      "Full coverage — CLAT PG, Judiciary & AIBE",
+    ],
+    img: "",
+    ctaHref: "/course",
+  };
+
+  return (
+    <section className="relative py-6 sm:py-10 lg:py-14 bg-gray-50 dark:bg-gray-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">
+
+          {/* Header row */}
+          <div className="flex items-start justify-between gap-3 mb-5 sm:mb-8">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800/40 rounded-full px-3 py-1 mb-2">
+                <span className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-pulse flex-shrink-0" />
+                <span className="text-primary-700 dark:text-primary-400 text-[10px] sm:text-[11px] font-bold tracking-widest uppercase">Grand Launch · 15 August 2026</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
+                <span className="text-gradient">New</span> Launch
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 mt-1 text-xs sm:text-sm">Launching on Independence Day — our most comprehensive law programme yet</p>
+            </div>
+            {/* Hidden on mobile — shown on sm+ */}
+            <Link
+              href={COURSE.ctaHref}
+              className="hidden sm:inline-flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+            >
+              View All Courses <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Single landscape course card */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.45 }}
+            className="rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800 hover:shadow-lg hover:shadow-black/5 transition-shadow duration-300"
+          >
+            <Link href={COURSE.ctaHref} className="block sm:grid sm:grid-cols-[2fr_3fr]">
+
+              {/* Image side */}
+              <div className="relative h-44 sm:h-full sm:min-h-[260px] lg:min-h-[280px] bg-gradient-to-br from-primary-50 via-blue-50 to-gray-100 dark:from-primary-950 dark:via-gray-900 dark:to-gray-800 overflow-hidden">
+                {COURSE.img ? (
+                  <img src={COURSE.img} alt={COURSE.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 select-none pointer-events-none">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-primary-100 dark:bg-primary-600/15 border border-primary-200 dark:border-primary-500/20 flex items-center justify-center">
+                      <BookOpen className="w-5 h-5 sm:w-7 sm:h-7 text-primary-400 dark:text-primary-500/60" />
+                    </div>
+                    <p className="text-gray-400 dark:text-gray-600 text-[10px] font-medium tracking-wide uppercase">Cover image coming soon</p>
+                  </div>
+                )}
+                {/* Category badge */}
+                <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3">
+                  <span className="bg-black/80 text-white text-[11px] sm:text-xs font-medium px-2.5 sm:px-3 py-1 rounded-full">{COURSE.category}</span>
+                </div>
+                {/* Launch date badge */}
+                <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3">
+                  <span className="bg-white/90 dark:bg-gray-900/80 backdrop-blur-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 text-[11px] sm:text-xs font-medium px-2 sm:px-2.5 py-1 rounded-lg">
+                    🇮🇳 15 Aug 2026
+                  </span>
+                </div>
+              </div>
+
+              {/* Content side */}
+              <div className="p-4 sm:p-5 lg:p-7 flex flex-col justify-between gap-3 sm:gap-5">
+                <div>
+                  <h3 className="font-bold text-gray-900 dark:text-white text-base sm:text-lg lg:text-xl leading-snug mb-1">
+                    {COURSE.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3">by {COURSE.instructor}</p>
+                  {/* Description hidden on mobile — shown sm+ */}
+                  <p className="hidden sm:block text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4 line-clamp-2 lg:line-clamp-3">
+                    {COURSE.description}
+                  </p>
+                  <div className="flex flex-col gap-1.5 sm:gap-2">
+                    {COURSE.bullets.map((b, i) => (
+                      <div key={i} className={`flex items-center gap-2 sm:gap-2.5 text-xs sm:text-sm text-gray-600 dark:text-gray-300 ${i === 2 ? "hidden sm:flex" : ""}`}>
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
+                          <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary-600 dark:text-primary-400" />
+                        </div>
+                        {b}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bottom row — stacks on mobile, side-by-side on sm+ */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 sm:pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div>
+                    <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide">Launching</p>
+                    <p className="font-bold text-gray-900 dark:text-white text-sm sm:text-base">15 August 2026</p>
+                  </div>
+                  <span className="inline-flex items-center justify-center gap-1.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm transition-colors w-full sm:w-auto">
+                    Get Early Access <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  </span>
+                </div>
+              </div>
+
+            </Link>
+          </motion.div>
+
+        </div>
+      </div>
+    </section>
   );
 };
 
@@ -452,7 +584,7 @@ const Curriculum = () => {
       Icon: BookOpen,
       title: "Rich study notes with every session,",
       highlight: "ready to download",
-      description: "Every live and recorded class comes with structured PDF notes, case study booklets, and legal reference sheets — curated by Bhavtosh A. for maximum retention and quick revision.",
+      description: "Every live and recorded class comes with structured PDF notes, case study booklets, and legal reference sheets — curated by Bhavtosh Agrawal for maximum retention and quick revision.",
       features: ["Downloadable PDF notes for every lecture", "Case study booklets & legal drafting templates"],
     },
     {
@@ -479,7 +611,7 @@ const Curriculum = () => {
       Icon: MessageCircle,
       title: "Direct guidance from your mentor,",
       highlight: "not just a course",
-      description: "Get scheduled one-on-one sessions with Bhavtosh A.. Ask questions, receive personalised strategy feedback, and feel genuinely supported every step of your preparation.",
+      description: "Get scheduled one-on-one sessions with Bhavtosh Agrawal. Ask questions, receive personalised strategy feedback, and feel genuinely supported every step of your preparation.",
       features: ["Scheduled doubt-clearing sessions", "Personalised strategy & essay review"],
     },
   ];
@@ -593,7 +725,7 @@ const Curriculum = () => {
                     className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3.5">
                     <p className="text-[11px] text-primary-600 font-bold uppercase tracking-wide mb-1">Now Playing</p>
                     <p className="text-sm font-bold text-gray-900 dark:text-white">Constitutional Law – Session 14</p>
-                    <p className="text-[12px] text-gray-500 dark:text-gray-400 mt-0.5">Bhavtosh A. · 1h 24m</p>
+                    <p className="text-[12px] text-gray-500 dark:text-gray-400 mt-0.5">Bhavtosh Agrawal · 1h 24m</p>
                   </motion.div>
                 </div>
               )}
@@ -641,7 +773,7 @@ const Curriculum = () => {
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pb-3 border-b border-gray-100 dark:border-gray-700 mb-1">
                     <img src="https://picsum.photos/seed/bhavtosh/40/40" alt="Mentor" className="w-10 h-10 rounded-full object-cover border-2 border-primary-600" />
                     <div>
-                      <p className="text-sm font-bold text-gray-900 dark:text-white">Bhavtosh A.</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">Bhavtosh Agrawal</p>
                       <p className="text-[11px] text-green-500 font-medium flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block" />Online · available now
                       </p>
@@ -727,7 +859,7 @@ const AlumniSection = () => {
       name: "TLP Student",
       role: "CLAT Aspirant",
       rating: 5,
-      text: "I started my CLAT preparation from absolute scratch and knew very little when I joined. Bhavtosh A. was leading the faculty there, and the guidance and support I received from him had a significant impact on my preparation. Beyond academics, Sir was always there whenever I needed guidance outside the classroom, and his encouragement helped me stay focused. The mocks, feedback, and constant guidance made the journey much less overwhelming. I'm genuinely grateful for everything I learned from him and for the role he played in my journey.",
+      text: "I started my CLAT preparation from absolute scratch and knew very little when I joined. Bhavtosh Agrawal was leading the faculty there, and the guidance and support I received from him had a significant impact on my preparation. Beyond academics, Sir was always there whenever I needed guidance outside the classroom, and his encouragement helped me stay focused. The mocks, feedback, and constant guidance made the journey much less overwhelming. I'm genuinely grateful for everything I learned from him and for the role he played in my journey.",
     },
     {
       avatar: "https://i.pravatar.cc/64?img=20",
@@ -741,14 +873,14 @@ const AlumniSection = () => {
       name: "Naman Devpura",
       role: "CLAT Aspirant",
       rating: 5,
-      text: "Bhavtosh A. played a formative role in helping me crack CLAT, guiding me to devise an effective strategy to capitalise on my strengths and address my weaknesses. Beyond just covering the syllabus, he instilled a sense of calm and clarity whenever the pressure felt overwhelming. I still reach out to him, and his words continue to anchor me in my most challenging moments. He taught me early on that true progress requires discipline and the character not to be led astray by shortcuts.",
+      text: "Bhavtosh Agrawal played a formative role in helping me crack CLAT, guiding me to devise an effective strategy to capitalise on my strengths and address my weaknesses. Beyond just covering the syllabus, he instilled a sense of calm and clarity whenever the pressure felt overwhelming. I still reach out to him, and his words continue to anchor me in my most challenging moments. He taught me early on that true progress requires discipline and the character not to be led astray by shortcuts.",
     },
     {
       avatar: "https://i.pravatar.cc/64?img=44",
       name: "TLP Student",
       role: "CLAT Aspirant",
       rating: 5,
-      text: "I started my CLAT preparation from absolute scratch and knew very little when I joined. Bhavtosh A. was leading the faculty there, and the guidance and support I received from him had a significant impact on my preparation. Beyond academics, Sir was always there whenever I needed guidance outside the classroom, and his encouragement helped me stay focused. The mocks, feedback, and constant guidance made the journey much less overwhelming. I'm genuinely grateful for everything I learned from him and for the role he played in my journey.",
+      text: "I started my CLAT preparation from absolute scratch and knew very little when I joined. Bhavtosh Agrawal was leading the faculty there, and the guidance and support I received from him had a significant impact on my preparation. Beyond academics, Sir was always there whenever I needed guidance outside the classroom, and his encouragement helped me stay focused. The mocks, feedback, and constant guidance made the journey much less overwhelming. I'm genuinely grateful for everything I learned from him and for the role he played in my journey.",
     },
     {
       avatar: "https://i.pravatar.cc/64?img=20",
@@ -762,7 +894,7 @@ const AlumniSection = () => {
       name: "Naman Devpura",
       role: "CLAT Aspirant",
       rating: 5,
-      text: "Bhavtosh A. played a formative role in helping me crack CLAT, guiding me to devise an effective strategy to capitalise on my strengths and address my weaknesses. Beyond just covering the syllabus, he instilled a sense of calm and clarity whenever the pressure felt overwhelming. I still reach out to him, and his words continue to anchor me in my most challenging moments. He taught me early on that true progress requires discipline and the character not to be led astray by shortcuts.",
+      text: "Bhavtosh Agrawal played a formative role in helping me crack CLAT, guiding me to devise an effective strategy to capitalise on my strengths and address my weaknesses. Beyond just covering the syllabus, he instilled a sense of calm and clarity whenever the pressure felt overwhelming. I still reach out to him, and his words continue to anchor me in my most challenging moments. He taught me early on that true progress requires discipline and the character not to be led astray by shortcuts.",
     },
   ];
 
@@ -772,28 +904,28 @@ const AlumniSection = () => {
       name: "TLP Student",
       role: "NLU Graduate | Legal Professional",
       rating: 5,
-      text: "When I first began my CLAT preparation, the sheer volume of legal concepts felt completely daunting. That entirely changed once Bhavtosh A. started teaching us. He possesses a rare gift for translating complex legal methods into engaging stories and practical, out-of-the-box scenarios. His classes were always fun and vibrant. He built my conceptual clarity so thoroughly that tackling CLAT almost felt like a game. What sets him apart is his genuine investment in his students — he is a mentor and an older brother figure who truly wants to see you succeed. The foundation he built gave me the critical reasoning skills I relied on throughout university and into my professional career.",
+      text: "When I first began my CLAT preparation, the sheer volume of legal concepts felt completely daunting. That entirely changed once Bhavtosh Agrawal started teaching us. He possesses a rare gift for translating complex legal methods into engaging stories and practical, out-of-the-box scenarios. His classes were always fun and vibrant. He built my conceptual clarity so thoroughly that tackling CLAT almost felt like a game. What sets him apart is his genuine investment in his students — he is a mentor and an older brother figure who truly wants to see you succeed. The foundation he built gave me the critical reasoning skills I relied on throughout university and into my professional career.",
     },
     {
       avatar: "https://i.pravatar.cc/64?img=29",
       name: "Akanksha",
       role: "3rd Year, NALSAR | AIR 121, CLAT",
       rating: 5,
-      text: "I am Akanksha, a third year student at NALSAR, one of the best law colleges in India. I secured AIR 121 in my CLAT exam but I had never dreamt of securing this when I first started my preparation at ALLEN CLAT coaching where Bhavtosh A. was our legal reasoning faculty. He was one of the major cornerstones throughout my preparation — not just as a professor, but as a mentor. I still remember running to him after every mock paper, anxious and scared, and he always listened calmly. His pep talk before the CLAT exam was the reason I walked into that exam hall and cracked it.",
+      text: "I am Akanksha, a third year student at NALSAR, one of the best law colleges in India. I secured AIR 121 in my CLAT exam but I had never dreamt of securing this when I first started my preparation at ALLEN CLAT coaching where Bhavtosh Agrawal was our legal reasoning faculty. He was one of the major cornerstones throughout my preparation — not just as a professor, but as a mentor. I still remember running to him after every mock paper, anxious and scared, and he always listened calmly. His pep talk before the CLAT exam was the reason I walked into that exam hall and cracked it.",
     },
     {
       avatar: "https://i.pravatar.cc/64?img=49",
       name: "TLP Student",
       role: "NLU Graduate | Legal Professional",
       rating: 5,
-      text: "When I first began my CLAT preparation, the sheer volume of legal concepts felt completely daunting. That entirely changed once Bhavtosh A. started teaching us. He possesses a rare gift for translating complex legal methods into engaging stories and practical, out-of-the-box scenarios. His classes were always fun and vibrant. He built my conceptual clarity so thoroughly that tackling CLAT almost felt like a game. What sets him apart is his genuine investment in his students — he is a mentor and an older brother figure who truly wants to see you succeed. The foundation he built gave me the critical reasoning skills I relied on throughout university and into my professional career.",
+      text: "When I first began my CLAT preparation, the sheer volume of legal concepts felt completely daunting. That entirely changed once Bhavtosh Agrawal started teaching us. He possesses a rare gift for translating complex legal methods into engaging stories and practical, out-of-the-box scenarios. His classes were always fun and vibrant. He built my conceptual clarity so thoroughly that tackling CLAT almost felt like a game. What sets him apart is his genuine investment in his students — he is a mentor and an older brother figure who truly wants to see you succeed. The foundation he built gave me the critical reasoning skills I relied on throughout university and into my professional career.",
     },
     {
       avatar: "https://i.pravatar.cc/64?img=29",
       name: "Akanksha",
       role: "3rd Year, NALSAR | AIR 121, CLAT",
       rating: 5,
-      text: "I am Akanksha, a third year student at NALSAR, one of the best law colleges in India. I secured AIR 121 in my CLAT exam but I had never dreamt of securing this when I first started my preparation at ALLEN CLAT coaching where Bhavtosh A. was our legal reasoning faculty. He was one of the major cornerstones throughout my preparation — not just as a professor, but as a mentor. I still remember running to him after every mock paper, anxious and scared, and he always listened calmly. His pep talk before the CLAT exam was the reason I walked into that exam hall and cracked it.",
+      text: "I am Akanksha, a third year student at NALSAR, one of the best law colleges in India. I secured AIR 121 in my CLAT exam but I had never dreamt of securing this when I first started my preparation at ALLEN CLAT coaching where Bhavtosh Agrawal was our legal reasoning faculty. He was one of the major cornerstones throughout my preparation — not just as a professor, but as a mentor. I still remember running to him after every mock paper, anxious and scared, and he always listened calmly. His pep talk before the CLAT exam was the reason I walked into that exam hall and cracked it.",
     },
   ];
 
@@ -892,13 +1024,13 @@ const InstructorSection = () => {
         >
           <img
             src="https://picsum.photos/seed/instructor/600/700"
-            alt="Bhavtosh A."
+            alt="Bhavtosh Agrawal"
             className="w-full h-full object-cover object-center"
           />
           {/* Bottom name overlay */}
           <div className="absolute bottom-4 left-4 right-4 bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex items-center justify-between shadow-lg">
             <div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-white leading-tight">Bhavtosh A.</h3>
+              <h3 className="text-base font-bold text-gray-900 dark:text-white leading-tight">Bhavtosh Agrawal</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Founder & Chief Mentor, The Law Project</p>
             </div>
             <div className="flex items-center gap-2">
@@ -1292,6 +1424,7 @@ export default function Home() {
     <main className="min-h-screen bg-white dark:bg-gray-900">
       <Navbar />
       <HeroSection2 />
+      <GrandLaunchSection />
       <CategoriesSection />
       <FeaturedCourses />
       <Curriculum />
