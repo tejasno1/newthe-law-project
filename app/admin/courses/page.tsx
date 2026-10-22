@@ -2,13 +2,15 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import Link from "next/link";
 import { Pencil, BookOpen, IndianRupee, Plus } from "lucide-react";
 import Image from "next/image";
+import CourseStatusToggle from "./CourseStatusToggle";
+import CourseDeleteButton from "./CourseDeleteButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminCoursesPage() {
   const { data: courses, error } = await supabaseAdmin
     .from("courses")
-    .select("slug, title, category, price, old_price, img, access_type, level")
+    .select("slug, title, category, price, old_price, img, access_type, level, is_coming_soon")
     .order("id", { ascending: true });
 
   if (error) {
@@ -97,6 +99,15 @@ export default async function AdminCoursesPage() {
                 </p>
               ) : null}
             </div>
+
+            {/* Status toggle */}
+            <CourseStatusToggle
+              slug={course.slug}
+              initialValue={course.is_coming_soon ?? false}
+            />
+
+            {/* Delete */}
+            <CourseDeleteButton slug={course.slug} title={course.title} />
 
             {/* Edit button */}
             <Link

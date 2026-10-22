@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseService } from "@/lib/supabase/service";
+import { sendEnrollmentEmail } from "@/lib/email";
 
 export async function GET() {
   const supabase = createClient();
@@ -53,5 +54,23 @@ export async function POST(req: NextRequest) {
     );
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Send confirmation email (non-blocking)
+  if (user.email) {
+    const { data: testRow } = await supabaseService
+      .from("mock_tests")
+      .select("title, enrollment_email")
+      .eq("slug", testSlug)
+      .maybeSingle();
+
+    if (testRow?.enrollment_email) {
+      sendEnrollmentEmail({
+        to: user.email,
+        courseTitle: testRow.title,
+        emailBody: testRow.enrollment_email,
+      }).catch(() => {});
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }

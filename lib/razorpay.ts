@@ -14,10 +14,56 @@ function loadScript(): Promise<boolean> {
   });
 }
 
+export type Purchase =
+  | { kind: "course"; courseSlug: string }
+  | { kind: "pass" }
+  | { kind: "question_bank"; itemId: number };
+
+const PENDING_KEY = "tlp_pending_orders";
+
+function readPending(): string[] {
+  try { return JSON.parse(localStorage.getItem(PENDING_KEY) || "[]"); } catch { return []; }
+}
+function writePending(ids: string[]) {
+  try { localStorage.setItem(PENDING_KEY, JSON.stringify(ids)); } catch {}
+}
+
+/** Ask the server to grant access for a paid order. Returns true once access is granted. */
+export async function verifyOrder(orderId: string): Promise<boolean> {
+  try {
+    const res = await fetch("/api/verify-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId }),
+    });
+    // Drop the order from the pending list unless it's worth retrying later
+    // (not paid yet / network / server error).
+    if (res.ok || res.status === 403 || res.status === 400 || res.status === 404) {
+      writePending(readPending().filter((id) => id !== orderId));
+    }
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Re-checks orders whose checkout never reported back (e.g. the tab was
+ * reloaded or killed while the student was in their UPI app).
+ * Returns true if any access was granted.
+ */
+export async function recoverPendingOrders(): Promise<boolean> {
+  const ids = readPending();
+  if (ids.length === 0) return false;
+  const results = await Promise.all(ids.map(verifyOrder));
+  return results.some(Boolean);
+}
+
 export async function openRazorpayCheckout({
   amountRupees,
   name,
   description,
+  purchase,
   prefill = {},
   onSuccess,
   onFailure,
@@ -25,6 +71,8 @@ export async function openRazorpayCheckout({
   amountRupees: number;
   name: string;
   description: string;
+  /** Course / All-Access / question-set purchases: priced and fulfilled server-side. */
+  purchase?: Purchase;
   prefill?: { name?: string; email?: string; contact?: string };
   onSuccess: (paymentId: string, orderId: string, signature: string) => void;
   onFailure?: (err: any) => void;
@@ -40,11 +88,12 @@ export async function openRazorpayCheckout({
     const res = await fetch("/api/create-order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amountRupees, description }),
+      body: JSON.stringify({ amountRupees, description, purchase }),
     });
     const data = await res.json();
     if (!res.ok || !data.id) throw new Error(data.error || "Order creation failed");
     orderId = data.id;
+    if (purchase) writePending([...readPending(), orderId].slice(-5));
   } catch (err: any) {
     alert("Could not initiate payment: " + (err.message || "please try again."));
     return;

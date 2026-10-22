@@ -7,11 +7,18 @@ export interface ResourceCategory {
   sort_order: number;
 }
 
+export interface ExamCategory {
+  id: number;
+  name: string;
+  sort_order: number;
+}
+
 export interface Resource {
   id: number;
   title: string;
   description: string | null;
   category_id: number | null;
+  exam_category: string | null;
   file_path: string | null;
   pages: number | null;
   size_label: string | null;
@@ -47,4 +54,13 @@ export async function getAllResourcesAdmin(): Promise<Resource[]> {
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
   return (data ?? []) as Resource[];
+}
+
+export async function getAllExamCategories(): Promise<ExamCategory[]> {
+  const { data } = await supabaseService
+    .from("exam_categories")
+    .select("id, name, sort_order")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+  return (data ?? []) as ExamCategory[];
 }

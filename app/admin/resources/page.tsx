@@ -1,12 +1,13 @@
-import { getAllResourcesAdmin, getAllResourceCategories } from "@/lib/resources";
+import { getAllResourcesAdmin, getAllResourceCategories, getAllExamCategories } from "@/lib/resources";
 import ResourcesAdminClient from "./ResourcesAdminClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminResourcesPage() {
-  const [resources, categories] = await Promise.all([
+  const [resources, categories, examCategories] = await Promise.all([
     getAllResourcesAdmin(),
     getAllResourceCategories(),
+    getAllExamCategories(),
   ]);
 
   return (
@@ -17,7 +18,7 @@ export default async function AdminResourcesPage() {
           Upload PDFs and manage categories. Toggle Published to show on the public page.
         </p>
       </div>
-      <ResourcesAdminClient resources={resources} categories={categories} />
+      <ResourcesAdminClient resources={resources} categories={categories} examCategories={examCategories} />
     </>
   );
 }

@@ -97,8 +97,17 @@ export interface Course {
   idealFor: string[];
   outcomes: string[];
   faqs: CourseFAQ[];
-  accessType: "free" | "tlp_plus" | "one_time_purchase" | null;
-  deliveryType: "online" | "recorded" | null;
+  accessType: "free" | "paid" | null;
+  deliveryType: "online" | "recorded" | "live_and_recorded" | null;
+  requiresTnc: boolean;
+  tncContent: string;
+  isComingSoon: boolean;
+  startDate: string;
+  offerValidTill: string;
+  showOfferValidity: boolean;
+  demoVideoUrl: string;
+  demoVideoUrl2: string;
+  demoVideoUrl3: string;
 }
 
 interface RawModuleItem {
@@ -151,6 +160,15 @@ interface CourseRow {
   faqs: Array<{ question: string; answer: string }> | null;
   access_type: string | null;
   delivery_type: string | null;
+  requires_tnc: boolean | null;
+  tnc_content: string | null;
+  is_coming_soon: boolean | null;
+  start_date: string | null;
+  offer_valid_till: string | null;
+  show_offer_validity: boolean | null;
+  demo_video_url: string | null;
+  demo_video_url_2: string | null;
+  demo_video_url_3: string | null;
 }
 
 const withSuffix = (value: string | number, suffix: string) =>
@@ -205,8 +223,17 @@ const mapRow = (row: CourseRow): Course => ({
   idealFor: row.ideal_for ?? [],
   outcomes: row.outcomes ?? [],
   faqs: row.faqs ?? [],
-  accessType: (row.access_type as "free" | "tlp_plus" | "one_time_purchase" | null) ?? null,
+  accessType: (row.access_type as "free" | "paid" | null) ?? null,
   deliveryType: (row.delivery_type as "online" | "recorded" | null) ?? null,
+  requiresTnc: row.requires_tnc ?? false,
+  tncContent: row.tnc_content ?? "",
+  isComingSoon: row.is_coming_soon ?? false,
+  startDate: row.start_date ?? "",
+  offerValidTill: row.offer_valid_till ?? "",
+  showOfferValidity: row.show_offer_validity ?? false,
+  demoVideoUrl: row.demo_video_url ?? "",
+  demoVideoUrl2: row.demo_video_url_2 ?? "",
+  demoVideoUrl3: row.demo_video_url_3 ?? "",
 });
 
 export async function getAllCourses(): Promise<Course[]> {

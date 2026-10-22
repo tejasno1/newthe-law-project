@@ -36,6 +36,7 @@ interface TestRow {
   is_free: boolean | null;
   price: number | string | null;
   test_type: string | null;
+  enrollment_email: string | null;
 }
 
 interface PassageRow {
@@ -173,6 +174,9 @@ export default function MockTestEditForm({
   const [isFree, setIsFree] = useState(test.is_free ?? true);
   const [price, setPrice] = useState(String(test.price ?? 0));
 
+  // Enrollment email
+  const [enrollmentEmail, setEnrollmentEmail] = useState(test.enrollment_email ?? "");
+
   // Passages state
   const [passages, setPassages] = useState<PassageRow[]>(initialPassages);
   const [showAddPassage, setShowAddPassage] = useState(false);
@@ -196,6 +200,7 @@ export default function MockTestEditForm({
       recent_attempt_line: recentAttemptLine,
       is_free: isFree,
       price: isFree ? 0 : Number(price) || 0,
+      enrollment_email: enrollmentEmail.trim() || null,
     };
 
     startTransition(async () => {
@@ -606,6 +611,25 @@ export default function MockTestEditForm({
             )}
           </div>
         </div>
+
+        {/* ── Enrollment Email ────────────────────────────────────────────── */}
+        <SectionCard title="Enrollment Confirmation Email">
+          <p className="text-xs text-gray-500 -mt-2">
+            This email is sent automatically when a student purchases this test. Leave blank to skip.
+          </p>
+          <Field label="Email Body">
+            <textarea
+              className={`${inputCls} resize-none`}
+              rows={6}
+              placeholder={"e.g. Congratulations! Your enrollment for CLAT Full Mock #1 is confirmed.\nYou can access the test at thelawproject.in/practice-tests.\nBest of luck!"}
+              value={enrollmentEmail}
+              onChange={(e) => setEnrollmentEmail(e.target.value)}
+            />
+          </Field>
+          <p className="text-xs text-gray-400">
+            Subject will be: <span className="font-mono text-gray-600">Your enrollment is confirmed — {title || test.title}</span>
+          </p>
+        </SectionCard>
 
         {/* ── Save footer ─────────────────────────────────────────────────── */}
         <div className="flex justify-end gap-3 pt-2 pb-8">

@@ -42,6 +42,16 @@ type CourseRow = {
   img: string;
   access_type: string | null;
   delivery_type: string | null;
+  requires_tnc: boolean | null;
+  tnc_content: string | null;
+  is_coming_soon: boolean | null;
+  start_date: string | null;
+  offer_valid_till: string | null;
+  show_offer_validity: boolean | null;
+  enrollment_email: string | null;
+  demo_video_url: string | null;
+  demo_video_url_2: string | null;
+  demo_video_url_3: string | null;
   modules: CourseModule[] | null;
   outcomes: string[] | null;
   ideal_for: string[] | null;
@@ -471,7 +481,18 @@ export default function CourseEditForm({ course }: { course: CourseRow }) {
     students: course.students != null ? String(course.students) : "",
     access_type: course.access_type ?? "",
     delivery_type: course.delivery_type ?? "",
+    start_date: course.start_date ?? "",
+    offer_valid_till: course.offer_valid_till ?? "",
   });
+
+  const [enrollmentEmail, setEnrollmentEmail] = useState<string>(course.enrollment_email ?? "");
+  const [demoVideoUrl, setDemoVideoUrl] = useState<string>(course.demo_video_url ?? "");
+  const [demoVideoUrl2, setDemoVideoUrl2] = useState<string>(course.demo_video_url_2 ?? "");
+  const [demoVideoUrl3, setDemoVideoUrl3] = useState<string>(course.demo_video_url_3 ?? "");
+  const [isComingSoon, setIsComingSoon] = useState<boolean>(course.is_coming_soon ?? false);
+  const [showOfferValidity, setShowOfferValidity] = useState<boolean>(course.show_offer_validity ?? false);
+  const [requiresTnc, setRequiresTnc] = useState<boolean>(course.requires_tnc ?? false);
+  const [tncContent, setTncContent] = useState<string>(course.tnc_content ?? "");
 
   const [modules, setModules] = useState<CourseModule[]>(
     (course.modules ?? []).map((m) => ({
@@ -518,6 +539,16 @@ export default function CourseEditForm({ course }: { course: CourseRow }) {
         students: form.students !== "" ? Number(form.students) : null,
         access_type: form.access_type || null,
         delivery_type: form.delivery_type || null,
+        start_date: form.start_date || null,
+        offer_valid_till: form.offer_valid_till || null,
+        show_offer_validity: showOfferValidity,
+        enrollment_email: enrollmentEmail || null,
+        demo_video_url: demoVideoUrl.trim() || null,
+        demo_video_url_2: demoVideoUrl2.trim() || null,
+        demo_video_url_3: demoVideoUrl3.trim() || null,
+        is_coming_soon: isComingSoon,
+        requires_tnc: requiresTnc,
+        tnc_content: requiresTnc ? (tncContent || null) : null,
         modules,
         outcomes,
         ideal_for: idealFor,
@@ -660,8 +691,7 @@ export default function CourseEditForm({ course }: { course: CourseRow }) {
             <select className={selectCls} value={form.access_type} onChange={set("access_type")}>
               <option value="">— Select —</option>
               <option value="free">Free</option>
-              <option value="one_time_purchase">One-Time Purchase</option>
-              <option value="tlp_plus">TLP Plus (Subscription)</option>
+              <option value="paid">Paid</option>
             </select>
           </Field>
           <Field label="Delivery Type">
@@ -669,8 +699,118 @@ export default function CourseEditForm({ course }: { course: CourseRow }) {
               <option value="">— Select —</option>
               <option value="online">Online (Live)</option>
               <option value="recorded">Recorded</option>
+              <option value="live_and_recorded">Live + Recorded</option>
             </select>
           </Field>
+          <Field label="Course Start Date" hint='e.g. "12 Aug 2026", "September 2026", "Coming Soon"'>
+            <input
+              type="text"
+              className={inputCls}
+              value={form.start_date}
+              onChange={set("start_date")}
+              placeholder="e.g. 12 Aug 2026"
+            />
+          </Field>
+          <Field label="Offer Valid Till" hint='Shown next to the offer price, e.g. "31 Aug 2026" or "Midnight tonight"'>
+            <input
+              type="text"
+              className={inputCls}
+              value={form.offer_valid_till}
+              onChange={set("offer_valid_till")}
+              placeholder="e.g. 31 Aug 2026"
+            />
+            <label className="flex items-center gap-3 cursor-pointer select-none mt-3">
+              <div
+                className="relative flex-shrink-0 w-10 h-6"
+                onClick={() => setShowOfferValidity((v) => !v)}
+              >
+                <div className={`w-10 h-6 rounded-full transition-colors duration-200 ${showOfferValidity ? "bg-green-500" : "bg-gray-300"}`} />
+                <div className={`pointer-events-none absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${showOfferValidity ? "translate-x-4" : "translate-x-0"}`} />
+              </div>
+              <div>
+                <span className={`text-sm font-semibold ${showOfferValidity ? "text-green-600" : "text-gray-400"}`}>
+                  {showOfferValidity ? "Showing offer validity" : "Offer validity hidden"}
+                </span>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {showOfferValidity ? "\"Offer valid till\" text is visible on the course page" : "Date is saved but not displayed to students"}
+                </p>
+              </div>
+            </label>
+          </Field>
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-3">Demo Videos <span className="text-xs font-normal text-gray-400">(up to 3 — Demo 1, Demo 2, Demo 3 buttons appear on course page)</span></label>
+            <div className="space-y-2">
+              {[
+                { label: "Demo 1", value: demoVideoUrl, set: setDemoVideoUrl },
+                { label: "Demo 2", value: demoVideoUrl2, set: setDemoVideoUrl2 },
+                { label: "Demo 3", value: demoVideoUrl3, set: setDemoVideoUrl3 },
+              ].map(({ label, value, set }) => (
+                <div key={label} className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#4d65ff] w-14 flex-shrink-0">{label}</span>
+                  <input
+                    type="url"
+                    className={inputCls}
+                    value={value}
+                    onChange={(e) => set(e.target.value)}
+                    placeholder="https://youtu.be/xxxx"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          <Field label="Course Status">
+            <label className="flex items-center gap-3 cursor-pointer select-none mt-1">
+              <div className="relative flex-shrink-0 w-10 h-6" onClick={() => setIsComingSoon((v) => !v)}>
+                <div className={`w-10 h-6 rounded-full transition-colors duration-200 ${isComingSoon ? "bg-amber-500" : "bg-green-500"}`} />
+                <div className={`pointer-events-none absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${isComingSoon ? "translate-x-4" : "translate-x-0"}`} />
+              </div>
+              <div>
+                <span className={`text-sm font-semibold ${isComingSoon ? "text-amber-600" : "text-green-600"}`}>
+                  {isComingSoon ? "Coming Soon" : "Live"}
+                </span>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {isComingSoon ? "Enroll button is disabled on course page" : "Enroll button is active"}
+                </p>
+              </div>
+            </label>
+          </Field>
+          <div className="sm:col-span-2 space-y-4">
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <div className="relative flex-shrink-0 w-10 h-6">
+                <input
+                  type="checkbox"
+                  checked={requiresTnc}
+                  onChange={(e) => setRequiresTnc(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`w-10 h-6 rounded-full transition-colors duration-200 ${requiresTnc ? "bg-[#4d65ff]" : "bg-gray-200"}`} />
+                <div className={`pointer-events-none absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${requiresTnc ? "translate-x-4" : "translate-x-0"}`} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700">Require T&amp;C Agreement</p>
+                <p className="text-xs text-gray-400 mt-0.5">Student must read and agree to Terms &amp; Conditions before enrolling in this course.</p>
+              </div>
+            </label>
+
+            {requiresTnc && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Terms &amp; Conditions Content
+                  <span className="text-xs text-gray-400 font-normal ml-2">Shown to the student before they can enroll</span>
+                </label>
+                <textarea
+                  value={tncContent}
+                  onChange={(e) => setTncContent(e.target.value)}
+                  rows={10}
+                  placeholder={"Enter the Terms & Conditions text for this course...\n\n1. ...\n2. ..."}
+                  className={inputCls + " resize-y font-mono text-xs"}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  {tncContent.length > 0 ? `${tncContent.length} characters` : "No content yet — student will see an empty T&C modal if left blank."}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -709,6 +849,25 @@ export default function CourseEditForm({ course }: { course: CourseRow }) {
             <FAQEditor faqs={faqs} onChange={setFaqs} />
           </div>
         </div>
+      </section>
+
+      {/* ── Enrollment Confirmation Email ──────────────────────────── */}
+      <section className="bg-white rounded-2xl border border-gray-200 p-6">
+        <h2 className="text-base font-semibold text-gray-900 mb-1">Enrollment Confirmation Email</h2>
+        <p className="text-xs text-gray-400 mb-4">
+          Sent automatically to the student after a successful payment. Leave blank to send no email.
+          Write plain text — line breaks are preserved.
+        </p>
+        <textarea
+          value={enrollmentEmail}
+          onChange={(e) => setEnrollmentEmail(e.target.value)}
+          rows={10}
+          placeholder={`Example:\n\nCongratulations! 🎉\n\nYour enrollment with TLP All-Access is confirmed.\n\nThe web portal will be available from September 1, 2026, 5:00 PM onwards and will be valid till 31st August 2027.\n\nWe'll see you inside!\n\n— Team TLP`}
+          className={inputCls + " resize-y font-mono text-xs"}
+        />
+        <p className="text-xs text-gray-400 mt-1.5">
+          {enrollmentEmail.length > 0 ? `${enrollmentEmail.length} characters` : "No email set — student will receive no confirmation email."}
+        </p>
       </section>
 
       {/* ── Modules & Curriculum ───────────────────────────────────── */}

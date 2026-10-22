@@ -1,13 +1,13 @@
 "use client";
 
-import { Instagram, Twitter, Youtube, Mail } from "lucide-react";
+import { Instagram, Linkedin, Youtube, Mail } from "lucide-react";
 
 const brandName = "The Law Project";
 
 const socialLinks = [
-  { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: Twitter, href: "#", label: "X (Twitter)" },
-  { icon: Youtube, href: "#", label: "YouTube" },
+  { icon: Instagram, href: "https://www.instagram.com/tlp_thelawproject/", label: "Instagram" },
+  { icon: Youtube, href: "https://youtube.com/@the_lawproject", label: "YouTube" },
+  { icon: Linkedin, href: "https://www.linkedin.com/company/the-law-edu-project/", label: "LinkedIn" },
   { icon: Mail, href: "mailto:thelawproject.in@gmail.com", label: "Email" },
 ];
 

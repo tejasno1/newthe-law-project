@@ -2,15 +2,16 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PageHeroBanner from "@/components/PageHeroBanner";
 import ResourcesCatalog from "./ResourcesCatalog";
-import { getAllPublishedResources, getAllResourceCategories } from "@/lib/resources";
+import { getAllPublishedResources, getAllResourceCategories, getAllExamCategories } from "@/lib/resources";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function ResourcesPage() {
-  const [resources, categories] = await Promise.all([
+  const [resources, categories, examCategories] = await Promise.all([
     getAllPublishedResources(),
     getAllResourceCategories(),
+    getAllExamCategories(),
   ]);
 
   // Get current user for watermark (null if not logged in)
@@ -29,6 +30,7 @@ export default async function ResourcesPage() {
       <ResourcesCatalog
         resources={resources}
         categories={categories}
+        examCategories={examCategories}
         candidateName={userName}
         isLoggedIn={!!user}
       />

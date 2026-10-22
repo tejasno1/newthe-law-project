@@ -5,16 +5,19 @@ import { ThemeProvider } from "@/components/ThemeProvider"
 import SessionGuard from "@/components/SessionGuard"
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://the-law-project.vercel.app"),
+  metadataBase: new URL("https://www.thelawproject.in"),
+  alternates: {
+    canonical: "https://www.thelawproject.in",
+  },
   title: {
     default: "The Law Project",
     template: "%s | The Law Project",
   },
-  description: "Expert-led legal education for CLAT, internships, and legal careers. Practical courses built by top lawyers.",
+  description: "Expert-led legal education for CLAT-UG, CLAT-PG, Judiciary, UGC-NET Law and all other govt law exams. Practical courses built by top lawyers.",
   openGraph: {
     title: "The Law Project",
-    description: "Expert-led legal education for CLAT, internships, and legal careers.",
-    url: "https://the-law-project.vercel.app",
+    description: "Expert-led legal education for CLAT-UG, CLAT-PG, Judiciary, UGC-NET Law and all other govt law exams.",
+    url: "https://www.thelawproject.in",
     siteName: "The Law Project",
     images: [
       {
@@ -30,7 +33,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "The Law Project",
-    description: "Expert-led legal education for CLAT, internships, and legal careers.",
+    description: "Expert-led legal education for CLAT-UG, CLAT-PG, Judiciary, UGC-NET Law and all other govt law exams.",
     images: ["/lightmodelogotlp.png"],
   },
 }

@@ -6,7 +6,7 @@ import {
   BadgeCheck, Users, Calendar,
 } from "lucide-react";
 
-export type BannerVariant = "courses" | "blogs" | "tests" | "quickskills" | "resources";
+export type BannerVariant = "courses" | "blogs" | "tests" | "quickskills" | "resources" | "question-bank";
 
 interface Props {
   title: string;
@@ -19,7 +19,7 @@ const bullets: Record<BannerVariant, string[]> = {
     "Landmark case laws — carefully analysed and exam-ready",
     "High-quality MCQ PDFs crafted by practising lawyers and faculty",
     "Bare acts with key provisions highlighted for quick revision",
-    "Curated for CLAT PG, Judiciary and AIBE — not just any PDF dump",
+    "Curated for CLAT-UG, CLAT-PG, Judiciary and all other govt law exams",
   ],
   courses: [
     "Expert-led HD video lectures",
@@ -30,12 +30,12 @@ const bullets: Record<BannerVariant, string[]> = {
   ],
   blogs: [
     "In-depth legal analysis written by practising lawyers",
-    "CLAT prep guides, case summaries and judgment breakdowns",
+    "CLAT-UG & CLAT-PG prep guides, case summaries and judgment breakdowns",
     "Career advice on internships, moot courts and NLU admissions",
     "New articles published every week across all law areas",
   ],
   tests: [
-    "Full-length mock tests for CLAT, Judiciary, AIBE, and other law entrance exams",
+    "Full-length mock tests for CLAT-UG, CLAT-PG, Judiciary and all other govt law exams",
     "Topic-wise and section-wise practice tests to master every subject",
     "Detailed answer explanations with legal reasoning and expert insights",
     "Performance reports to identify strengths, improve weak areas, and track progress",
@@ -46,22 +46,22 @@ const bullets: Record<BannerVariant, string[]> = {
     "Certificate of Completion for every programme",
     "Career support, mentorship, and networking opportunities",
   ],
+  "question-bank": [
+    "Subject-wise MCQ sets covering Constitutional Law, IPC, CrPC, Evidence Act, and more",
+    "Questions crafted by practising lawyers — not generic, not recycled from textbooks",
+    "Read online anytime — accessible on any device, no downloads required",
+    "Covering CLAT-UG, CLAT-PG, Judiciary, UGC-NET Law and all other govt law exams",
+  ],
 };
-
-const stats = [
-  { value: "10,000+", label: "Students Enrolled" },
-  { value: "500+",    label: "Practice Tests"    },
-  { value: "50+",     label: "Expert Faculty"    },
-];
 
 /* ── COURSES: What's Included card ───────────────────────────────────────── */
 function CoursesCard() {
   const resources = [
     { icon: Video,         label: "HD Video Lectures",          detail: "Watch anytime, anywhere"        },
-    { icon: FileText,      label: "Downloadable PDF Notes",     detail: "Curated study material"         },
+    { icon: FileText,      label: "PDF Notes",     detail: "Curated study material"         },
     { icon: ClipboardList, label: "Chapter-wise MCQs",          detail: "Test after every module"        },
     { icon: Award,         label: "Completion Certificate",     detail: "Industry recognised"            },
-    { icon: MessageCircle, label: "Live Doubt-Clearing Sessions", detail: "Q&A with expert faculty"      },
+    { icon: MessageCircle, label: "Doubt-Solving Sessions", detail: "Q&A with expert faculty"      },
   ];
   return (
     <div className="bg-white rounded-2xl shadow-2xl overflow-hidden" style={{ animation: "tlpFloat 5s ease-in-out infinite" }}>
@@ -100,16 +100,16 @@ function CoursesCard() {
 
 /* ── BLOGS: Trending topics + recent articles card ───────────────────────── */
 function BlogsCard() {
-  const categories = ["Constitutional", "Criminal", "CLAT Prep", "Corporate"];
+  const categories = ["Constitutional", "Criminal", "CLAT-UG", "Corporate"];
   const articles = [
-    { title: "How to Clear CLAT 2025 in 3 Months",   time: "5 min", cat: "CLAT Prep",     catColor: "bg-amber-100 text-amber-700" },
-    { title: "Top 10 NLUs to Target for Admission",   time: "3 min", cat: "Career",         catColor: "bg-green-100 text-green-700" },
-    { title: "Rights Guaranteed Under Article 21",    time: "4 min", cat: "Constitutional", catColor: "bg-blue-100 text-blue-700"   },
+    { title: "How to Clear CLAT-UG 2025 in 3 Months", time: "5 min", cat: "CLAT-UG",       catColor: "bg-amber-100 text-amber-700" },
+    { title: "Top 10 NLUs to Target for Admission",    time: "3 min", cat: "Career",         catColor: "bg-green-100 text-green-700" },
+    { title: "Rights Guaranteed Under Article 21",     time: "4 min", cat: "Constitutional", catColor: "bg-blue-100 text-blue-700"   },
   ];
   const chipColors: Record<string, string> = {
     "Constitutional": "bg-blue-100 text-blue-700",
     "Criminal":       "bg-red-100 text-red-700",
-    "CLAT Prep":      "bg-amber-100 text-amber-700",
+    "CLAT-UG":        "bg-amber-100 text-amber-700",
     "Corporate":      "bg-purple-100 text-purple-700",
   };
   return (
@@ -235,7 +235,7 @@ function QuickSkillsCard() {
   const badges = [
     { label: "Certificate of Completion", color: "bg-green-100 text-green-700"   },
     { label: "6–8 Weeks",                 color: "bg-blue-100 text-blue-700"     },
-    { label: "Live Doubt Sessions",       color: "bg-purple-100 text-purple-700" },
+    { label: "Doubt-Solving Sessions",    color: "bg-purple-100 text-purple-700" },
   ];
   return (
     <div className="bg-white rounded-2xl shadow-2xl overflow-hidden" style={{ animation: "tlpFloat 5s ease-in-out infinite" }}>
@@ -287,7 +287,7 @@ function QuickSkillsCard() {
 /* ── RESOURCES: download preview card ───────────────────────────────────── */
 function ResourcesCard() {
   const items = [
-    { icon: ClipboardList, label: "CLAT PG MCQs — Topic-wise",       tag: "MCQ PDF",  tagColor: "bg-violet-100 text-violet-700" },
+    { icon: ClipboardList, label: "CLAT-PG MCQs — Topic-wise",        tag: "MCQ PDF",  tagColor: "bg-violet-100 text-violet-700" },
     { icon: BookOpen,      label: "Supreme Court Case Summaries",     tag: "Case Laws", tagColor: "bg-amber-100 text-amber-700"  },
     { icon: FileText,      label: "Indian Penal Code — BNS 2023",     tag: "Bare Act", tagColor: "bg-emerald-100 text-emerald-700" },
   ];
@@ -329,17 +329,83 @@ function ResourcesCard() {
   );
 }
 
+/* ── QUESTION BANK: subject grid + sample MCQ card ──────────────────────── */
+function QuestionBankCard() {
+  const subjects = [
+    { label: "CLAT-UG",            color: "bg-blue-50 text-blue-700 border-blue-100" },
+    { label: "CLAT-PG",            color: "bg-red-50 text-red-700 border-red-100"   },
+    { label: "Judiciary",          color: "bg-amber-50 text-amber-700 border-amber-100" },
+    { label: "UGC-NET Law",        color: "bg-emerald-50 text-emerald-700 border-emerald-100" },
+    { label: "LLB Subjects",       color: "bg-purple-50 text-purple-700 border-purple-100" },
+    { label: "Govt Law Exams",     color: "bg-orange-50 text-orange-700 border-orange-100" },
+  ];
+  const sample = [
+    { label: "A", text: "Sessions Court",   correct: false },
+    { label: "B", text: "High Court",       correct: false },
+    { label: "C", text: "Supreme Court",    correct: true  },
+    { label: "D", text: "District Court",   correct: false },
+  ];
+  return (
+    <div className="bg-white rounded-2xl shadow-2xl overflow-hidden" style={{ animation: "tlpFloat 5s ease-in-out infinite" }}>
+      <div className="bg-primary-600 px-4 py-3.5 flex items-center gap-2">
+        <ClipboardList className="w-3.5 h-3.5 text-primary-200" />
+        <div>
+          <p className="text-white font-bold text-sm">Question Bank</p>
+          <p className="text-primary-200 text-[10px] mt-0.5">MCQ sets across all law subjects</p>
+        </div>
+      </div>
+      {/* Subject chips */}
+      <div className="px-3 pt-3 pb-2 flex flex-wrap gap-1.5">
+        {subjects.map((s) => (
+          <span key={s.label} className={`rounded-full px-2 py-0.5 text-[9px] font-semibold border ${s.color}`}>
+            {s.label}
+          </span>
+        ))}
+      </div>
+      {/* Sample question */}
+      <div className="px-3 pb-1">
+        <div className="rounded-xl bg-gray-50 border border-gray-100 px-3 py-2.5">
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-1">Sample Question</p>
+          <p className="text-gray-800 text-[10px] font-semibold leading-snug mb-2">
+            Which court has the final power of judicial review under the Indian Constitution?
+          </p>
+          <div className="space-y-1">
+            {sample.map((opt) => (
+              <div key={opt.label} className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-[9px] font-medium border ${
+                opt.correct ? "bg-green-50 border-green-300 text-green-800" : "bg-white border-gray-100 text-gray-600"
+              }`}>
+                <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold flex-shrink-0 ${
+                  opt.correct ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"
+                }`}>{opt.label}</span>
+                {opt.text}
+                {opt.correct && <CheckCircle className="w-2.5 h-2.5 text-green-500 ml-auto flex-shrink-0" strokeWidth={2.5} />}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="px-3 py-2.5">
+        <div className="rounded-xl bg-primary-50 border border-primary-100 px-3 py-2 flex items-center gap-2">
+          <BadgeCheck className="w-3 h-3 text-primary-600 flex-shrink-0" />
+          <span className="text-primary-700 text-[10px] font-semibold">Crafted by practising lawyers &amp; faculty</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main banner ─────────────────────────────────────────────────────────── */
 export default function PageHeroBanner({ title, subtitle, variant = "courses" }: Props) {
   const rightCard =
-    variant === "courses"    ? <CoursesCard />    :
-    variant === "blogs"      ? <BlogsCard />      :
-    variant === "tests"      ? <TestsCard />      :
-    variant === "resources"  ? <ResourcesCard />  :
-                               <QuickSkillsCard />;
+    variant === "courses"       ? <CoursesCard />      :
+    variant === "blogs"         ? <BlogsCard />        :
+    variant === "tests"         ? <TestsCard />        :
+    variant === "resources"     ? <ResourcesCard />    :
+    variant === "question-bank" ? <QuestionBankCard /> :
+                                  <QuickSkillsCard />;
 
   return (
-    <section className="w-full bg-white dark:bg-[#030712] pt-[6.5rem] lg:pt-[5.5rem] relative overflow-hidden">
+    <section className="w-full bg-white dark:bg-[#030712] pt-[9rem] lg:pt-[8rem] relative overflow-hidden">
       {/* Light mode subtle gradient wash */}
       <div className="dark:hidden absolute inset-0 bg-gradient-to-br from-primary-50/60 via-white to-slate-100/40" />
 
@@ -384,16 +450,6 @@ export default function PageHeroBanner({ title, subtitle, variant = "courses" }:
                 </li>
               ))}
             </ul>
-            {variant !== "resources" && (
-              <div className="flex items-stretch w-fit rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/80 dark:bg-white/5 divide-x divide-gray-200 dark:divide-white/10 overflow-hidden">
-                {stats.map((s) => (
-                  <div key={s.label} className="px-3 md:px-5 py-2.5 md:py-3">
-                    <p className="text-gray-900 dark:text-white font-bold text-base md:text-lg leading-none">{s.value}</p>
-                    <p className="text-gray-500 dark:text-gray-400 text-[10px] md:text-[11px] mt-1 md:mt-1.5 whitespace-nowrap">{s.label}</p>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* ── RIGHT: variant-specific card ──────────────────────────── */}

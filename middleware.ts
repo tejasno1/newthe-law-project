@@ -2,7 +2,15 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  const host = request.headers.get("host") ?? "";
   const { pathname } = request.nextUrl;
+
+  // Redirect the Vercel deployment URL to the canonical custom domain.
+  // Prevents the vercel.app URL from being indexed alongside the real domain.
+  if (host.includes(".vercel.app")) {
+    const destination = `https://www.thelawproject.in${pathname}${request.nextUrl.search}`;
+    return NextResponse.redirect(destination, { status: 301 });
+  }
 
   // Admin routes: protected by a simple password cookie (no Supabase Auth needed)
   if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
@@ -15,7 +23,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // All other matched routes: run Supabase session refresh
+  // Auth pages only: run Supabase session refresh + redirect if already logged in
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -53,7 +61,12 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    // Auth pages (Supabase session refresh)
     "/auth/login", "/auth/signup", "/login", "/signup", "/forgot-password",
+    // Admin routes (password cookie check)
     "/admin/:path*",
+    // All other pages — needed so the Vercel redirect runs site-wide.
+    // Excludes _next internals, static files, and common asset extensions.
+    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff2?|ttf|otf)).*)",
   ],
 };

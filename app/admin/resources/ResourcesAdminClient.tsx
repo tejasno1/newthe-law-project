@@ -13,25 +13,30 @@ import {
   uploadResourceFile,
   createResourceCategory,
   deleteResourceCategory,
+  createExamCategory,
+  deleteExamCategory,
 } from "@/app/admin/actions";
-import type { Resource, ResourceCategory } from "@/lib/resources";
+import type { Resource, ResourceCategory, ExamCategory } from "@/lib/resources";
 
 interface Props {
   resources: Resource[];
   categories: ResourceCategory[];
+  examCategories: ExamCategory[];
 }
 
 const blank = () => ({
   title: "",
   description: "",
   categoryId: "",
+  examCategory: "",
   isFree: true,
   isPublished: true,
 });
 
-export default function ResourcesAdminClient({ resources: init, categories: initCats }: Props) {
+export default function ResourcesAdminClient({ resources: init, categories: initCats, examCategories: initExamCats }: Props) {
   const [resources, setResources] = useState<Resource[]>(init);
   const [categories, setCategories] = useState<ResourceCategory[]>(initCats);
+  const [examCategories, setExamCategories] = useState<ExamCategory[]>(initExamCats);
 
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<ReturnType<typeof blank>>(blank());
@@ -46,6 +51,9 @@ export default function ResourcesAdminClient({ resources: init, categories: init
 
   const [newCat, setNewCat] = useState("");
   const [catSaving, startCat] = useTransition();
+
+  const [newExamCat, setNewExamCat] = useState("");
+  const [examCatSaving, startExamCat] = useTransition();
 
   function flash(msg: string) {
     setToast(msg);
@@ -67,6 +75,7 @@ export default function ResourcesAdminClient({ resources: init, categories: init
       title: r.title,
       description: r.description ?? "",
       categoryId: r.category_id ? String(r.category_id) : "",
+      examCategory: r.exam_category ?? "",
       isFree: r.is_free,
       isPublished: r.is_published,
     });
@@ -106,6 +115,7 @@ export default function ResourcesAdminClient({ resources: init, categories: init
         title: form.title.trim(),
         description: form.description.trim() || undefined,
         categoryId: form.categoryId ? Number(form.categoryId) : null,
+        examCategory: form.examCategory || null,
         filePath: existingPath,
         isFree: form.isFree,
         isPublished: form.isPublished,
@@ -153,6 +163,28 @@ export default function ResourcesAdminClient({ resources: init, categories: init
     if (res.error) { flash(`Error: ${res.error}`); return; }
     setCategories((p) => p.filter((c) => c.id !== id));
     flash("Category deleted.");
+  }
+
+  function handleAddExamCategory(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newExamCat.trim()) return;
+    startExamCat(async () => {
+      const res = await createExamCategory(newExamCat.trim());
+      if (res.error) { flash(`Error: ${res.error}`); return; }
+      if (res.category) {
+        setExamCategories((p) => [...p, res.category as ExamCategory]);
+        setNewExamCat("");
+        flash("Exam category added.");
+      }
+    });
+  }
+
+  async function handleDeleteExamCat(id: number) {
+    if (!confirm("Delete this exam category? Resources assigned to it will become unassigned.")) return;
+    const res = await deleteExamCategory(id);
+    if (res.error) { flash(`Error: ${res.error}`); return; }
+    setExamCategories((p) => p.filter((c) => c.id !== id));
+    flash("Exam category deleted.");
   }
 
   const inp = "w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-[#4d65ff] focus:border-[#4d65ff] outline-none transition";
@@ -223,7 +255,7 @@ export default function ResourcesAdminClient({ resources: init, categories: init
 
               <div>
                 <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                  Category
+                  Category (Type)
                 </label>
                 <select
                   value={form.categoryId}
@@ -233,6 +265,22 @@ export default function ResourcesAdminClient({ resources: init, categories: init
                   <option value="">— No category —</option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                  Exam Category
+                </label>
+                <select
+                  value={form.examCategory}
+                  onChange={(e) => setForm({ ...form, examCategory: e.target.value })}
+                  className={inp}
+                >
+                  <option value="">— No exam category —</option>
+                  {examCategories.map((ec) => (
+                    <option key={ec.id} value={ec.name}>{ec.name}</option>
                   ))}
                 </select>
               </div>
@@ -355,6 +403,40 @@ export default function ResourcesAdminClient({ resources: init, categories: init
         </form>
       </div>
 
+      {/* ─── EXAM CATEGORIES ─────────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <h2 className="font-semibold text-gray-900 text-sm flex items-center gap-2 mb-4">
+          <span className="w-6 h-6 rounded-md bg-orange-50 flex items-center justify-center">
+            <FolderPlus className="w-3.5 h-3.5 text-orange-500" />
+          </span>
+          Exam Categories
+        </h2>
+
+        <div className="flex flex-wrap gap-2 mb-4">
+          {examCategories.length === 0 && <p className="text-sm text-gray-400">No exam categories yet. Run the SQL below to seed defaults, or add manually.</p>}
+          {examCategories.map((c) => (
+            <span key={c.id} className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-700 text-xs font-medium px-3 py-1.5 rounded-lg border border-orange-200">
+              {c.name}
+              <button onClick={() => handleDeleteExamCat(c.id)} className="text-orange-300 hover:text-red-400 transition-colors">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+
+        <form onSubmit={handleAddExamCategory} className="flex gap-2 max-w-sm">
+          <input value={newExamCat} onChange={(e) => setNewExamCat(e.target.value)} placeholder="e.g. CLAT UG" className={inp} />
+          <button
+            type="submit"
+            disabled={examCatSaving || !newExamCat.trim()}
+            className="flex-shrink-0 inline-flex items-center gap-1.5 bg-orange-500 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
+          >
+            {examCatSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+            Add
+          </button>
+        </form>
+      </div>
+
       {/* ─── RESOURCES LIST ──────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60">
@@ -387,6 +469,9 @@ export default function ResourcesAdminClient({ resources: init, categories: init
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       {cat && (
                         <span className="text-[11px] bg-[#4d65ff]/10 text-[#4d65ff] px-2 py-0.5 rounded-full font-medium">{cat.name}</span>
+                      )}
+                      {r.exam_category && (
+                        <span className="text-[11px] bg-orange-50 text-orange-600 border border-orange-200 px-2 py-0.5 rounded-full font-medium">{r.exam_category}</span>
                       )}
                       {r.is_free
                         ? <span className="text-[11px] bg-green-50 text-green-600 border border-green-200 px-2 py-0.5 rounded-full">Free</span>

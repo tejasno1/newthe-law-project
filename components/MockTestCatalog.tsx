@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Clock, FileQuestion, Award, Globe, BarChart3, LogIn, X, Share2, ShoppingCart, Link2, Mail } from "lucide-react";
+import { Clock, FileQuestion, Award, Globe, BarChart3, LogIn, X, Share2, ShoppingCart, Link2, Mail, CheckCircle, Sparkles } from "lucide-react";
 import type { MockTestSafe } from "@/lib/mockTests";
 import { createClient } from "@/lib/supabase/client";
 import { openRazorpayCheckout } from "@/lib/razorpay";
@@ -36,7 +36,10 @@ export default function MockTestCatalog({ tests }: { tests: MockTestSafe[] }) {
   const [loginSlug, setLoginSlug] = useState<string | null>(null);
   const [userAttempts, setUserAttempts] = useState<Map<string, AttemptInfo>>(new Map());
   const [purchasedSlugs, setPurchasedSlugs] = useState<Set<string>>(new Set());
+  const [purchasesLoading, setPurchasesLoading] = useState(true);
   const [buyingSlug, setBuyingSlug] = useState<string | null>(null);
+  const [grantingSlug, setGrantingSlug] = useState<string | null>(null);
+  const [accessGranted, setAccessGranted] = useState<{ slug: string; title: string; message: string | null } | null>(null);
   const [shareOpenSlug, setShareOpenSlug] = useState<string | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
 
@@ -77,7 +80,7 @@ export default function MockTestCatalog({ tests }: { tests: MockTestSafe[] }) {
   }, []);
 
   useEffect(() => {
-    if (!isLoggedIn) { setUserAttempts(new Map()); setPurchasedSlugs(new Set()); return; }
+    if (!isLoggedIn) { setUserAttempts(new Map()); setPurchasedSlugs(new Set()); setPurchasesLoading(false); return; }
 
     // Fetch attempts
     fetch("/api/user/attempts")
@@ -98,7 +101,8 @@ export default function MockTestCatalog({ tests }: { tests: MockTestSafe[] }) {
       .then(({ purchases }: { purchases: Array<{ test_slug: string }> }) => {
         setPurchasedSlugs(new Set(purchases.map((p) => p.test_slug)));
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setPurchasesLoading(false));
   }, [isLoggedIn]);
 
   const openPopup = (slug: string) => {
@@ -120,6 +124,27 @@ export default function MockTestCatalog({ tests }: { tests: MockTestSafe[] }) {
       router.push(`/mock-test/${slug}/instructions`);
     } else {
       openPopup(slug);
+    }
+  };
+
+  const handleGetFreeAccess = async (test: MockTestSafe) => {
+    if (!isLoggedIn) { setLoginSlug(test.slug); return; }
+    setGrantingSlug(test.slug);
+    try {
+      const res = await fetch("/api/test-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ testSlug: test.slug }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPurchasedSlugs((prev) => new Set(Array.from(prev).concat(test.slug)));
+        setAccessGranted({ slug: test.slug, title: data.title ?? test.title, message: data.emailBody ?? null });
+      }
+    } catch {
+      // silent — user can try starting the test anyway
+    } finally {
+      setGrantingSlug(null);
     }
   };
 
@@ -188,12 +213,13 @@ export default function MockTestCatalog({ tests }: { tests: MockTestSafe[] }) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {filteredTests.map((test, i) => {
-            const attempt   = userAttempts.get(test.slug);
-            const hasAttempt  = !!attempt;
-            const isPurchased = test.isFree || purchasedSlugs.has(test.slug);
-            const canStart    = isPurchased;
-            const diff        = difficultyConfig[test.difficulty] ?? difficultyConfig.MEDIUM;
-            const isBuying    = buyingSlug === test.slug;
+            const attempt    = userAttempts.get(test.slug);
+            const hasAttempt = !!attempt;
+            const isPurchased = purchasedSlugs.has(test.slug);
+            const canStart   = isPurchased;
+            const diff       = difficultyConfig[test.difficulty] ?? difficultyConfig.MEDIUM;
+            const isBuying   = buyingSlug === test.slug;
+            const isGranting = grantingSlug === test.slug;
 
             return (
               <div
@@ -210,11 +236,6 @@ export default function MockTestCatalog({ tests }: { tests: MockTestSafe[] }) {
                       </span>
                     ) : (
                       <span className="inline-flex items-center bg-amber-400 text-gray-900 text-[11px] font-bold px-2.5 py-1 rounded">
-                        TLP+
-                      </span>
-                    )}
-                    {!test.isFree && test.price > 0 && (
-                      <span className="text-[11px] font-bold text-gray-900 dark:text-white">
                         ₹{test.price}
                       </span>
                     )}
@@ -319,12 +340,26 @@ export default function MockTestCatalog({ tests }: { tests: MockTestSafe[] }) {
 
                 {/* CTA button */}
                 <div className="px-3.5 pb-3.5 mt-auto">
-                  {canStart ? (
+                  {purchasesLoading ? (
+                    <div className="w-full py-2.5 rounded-md bg-gray-100 dark:bg-gray-700 animate-pulse" />
+                  ) : canStart ? (
                     <button
                       onClick={() => handleStartTest(test.slug)}
                       className="w-full py-2.5 text-sm font-bold rounded-md transition-colors bg-primary-600 hover:bg-primary-700 text-white"
                     >
-                      {hasAttempt ? "Reattempt" : "Start Test"}
+                      {hasAttempt ? "Reattempt" : "Start Practising"}
+                    </button>
+                  ) : test.isFree ? (
+                    <button
+                      onClick={() => handleGetFreeAccess(test)}
+                      disabled={isGranting}
+                      className="w-full py-2.5 text-sm font-bold rounded-md transition-colors flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white disabled:opacity-60"
+                    >
+                      {isGranting ? (
+                        <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Granting…</>
+                      ) : (
+                        "Get Free Access"
+                      )}
                     </button>
                   ) : (
                     <button
@@ -333,7 +368,7 @@ export default function MockTestCatalog({ tests }: { tests: MockTestSafe[] }) {
                       className="w-full py-2.5 text-sm font-bold rounded-md transition-colors flex items-center justify-center gap-2 bg-gray-900 dark:bg-white hover:bg-gray-700 dark:hover:bg-gray-100 text-white dark:text-gray-900 disabled:opacity-60"
                     >
                       <ShoppingCart className="w-4 h-4" />
-                      {isBuying ? "Opening payment…" : `Buy Now · ₹${test.price}`}
+                      {isBuying ? "Opening payment…" : "Get Access"}
                     </button>
                   )}
                 </div>
@@ -342,6 +377,74 @@ export default function MockTestCatalog({ tests }: { tests: MockTestSafe[] }) {
           })}
         </div>
       )}
+
+      {/* Access Granted popup */}
+      <AnimatePresence>
+        {accessGranted && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+            onClick={(e) => { if (e.target === e.currentTarget) setAccessGranted(null); }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 16 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-7 relative text-center"
+            >
+              <button
+                onClick={() => setAccessGranted(null)}
+                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {/* Icon */}
+              <div className="relative w-16 h-16 mx-auto mb-5">
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+                </div>
+                <span className="absolute -top-1 -right-1 text-lg"><Sparkles className="w-5 h-5 text-amber-400" /></span>
+              </div>
+
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                Access Granted!
+              </h2>
+              <p className="text-sm font-semibold text-primary-600 dark:text-primary-400 mb-4">
+                {accessGranted.title}
+              </p>
+
+              {accessGranted.message ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed whitespace-pre-line text-left bg-gray-50 dark:bg-gray-700/50 rounded-xl px-4 py-3">
+                  {accessGranted.message}
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+                  Congratulations! You now have full access to this test. A confirmation has been sent to your email. Good luck with your preparation!
+                </p>
+              )}
+
+              <div className="space-y-2.5">
+                <button
+                  onClick={() => { const slug = accessGranted.slug; setAccessGranted(null); handleStartTest(slug); }}
+                  className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-xl py-2.5 text-sm font-bold transition-colors"
+                >
+                  Start Practising
+                </button>
+                <button
+                  onClick={() => setAccessGranted(null)}
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Maybe Later
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Login modal */}
       <AnimatePresence>

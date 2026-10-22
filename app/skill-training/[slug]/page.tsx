@@ -5,7 +5,7 @@ import { motion, useInView, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getProgramme } from "@/lib/programmes";
+import type { Programme } from "@/lib/programmes";
 import { openRazorpayCheckout, parseRupees } from "@/lib/razorpay";
 import {
   Clock, Calendar, Check, ChevronDown, ChevronRight,
@@ -90,7 +90,8 @@ const WHO_ICONS = [BookOpen, Briefcase, TrendingUp, Gavel];
 
 export default function ProgrammeDetailPage({ params }: { params: { slug: string } }) {
   const { slug } = params;
-  const prog = getProgramme(slug);
+  const [prog, setProg] = useState<Programme | null>(null);
+  const [progLoading, setProgLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [enrollOpen, setEnrollOpen] = useState(false);
@@ -108,6 +109,13 @@ export default function ProgrammeDetailPage({ params }: { params: { slug: string
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  useEffect(() => {
+    fetch(`/api/skill-training/${slug}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { setProg(data); setProgLoading(false); })
+      .catch(() => setProgLoading(false));
+  }, [slug]);
 
   useEffect(() => {
     document.body.style.overflow = enrollOpen ? "hidden" : "";
@@ -139,6 +147,11 @@ export default function ProgrammeDetailPage({ params }: { params: { slug: string
         prefill: { name: form.name, email: form.email, contact: form.phone },
         onSuccess: (paymentId) => {
           setPaying(false);
+          fetch("/api/quickskill-enroll", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ slug: prog.slug, email: form.email, name: form.name }),
+          }).catch(() => {});
           const msg = `Hi! I've successfully booked a slot for: ${prog.title}\n\nName: ${form.name}\nEmail: ${form.email}\nPhone: ${form.phone}\nPayment ID: ${paymentId}`;
           window.open(`https://wa.me/9555634585?text=${encodeURIComponent(msg)}`, "_blank");
           setFormDone(true);
@@ -150,6 +163,18 @@ export default function ProgrammeDetailPage({ params }: { params: { slug: string
       window.open(`https://wa.me/9555634585?text=${encodeURIComponent(msg)}`, "_blank");
       setFormDone(true);
     }
+  }
+
+  if (progLoading) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+        <Footer />
+      </div>
+    );
   }
 
   if (!prog) {
@@ -180,7 +205,7 @@ export default function ProgrammeDetailPage({ params }: { params: { slug: string
       {/* ════════════════════════════════════════════════════════
           1. HERO — dark (matches rest of site)
       ════════════════════════════════════════════════════════ */}
-      <section className="bg-gray-950 pt-20 sm:pt-24 overflow-hidden">
+      <section className="bg-gray-950 pt-[9.5rem] sm:pt-[9.5rem] lg:pt-[8rem] overflow-hidden">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
           {/* breadcrumb */}

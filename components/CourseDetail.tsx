@@ -12,7 +12,7 @@ import AccessBadge from "@/components/AccessBadge";
 
 const TestimonialSlider = dynamic(() => import("@/components/TestimonialSlider"), { ssr: false });
 import { usePageTracking, trackEvent } from "@/lib/tracking";
-import { openRazorpayCheckout, parseRupees } from "@/lib/razorpay";
+import { openRazorpayCheckout, parseRupees, recoverPendingOrders, verifyOrder } from "@/lib/razorpay";
 import {
   Star,
   Clock,
@@ -32,15 +32,29 @@ import {
   X,
   LogIn,
   ShoppingCart,
+  Check,
+  Video,
+  BookOpen,
+  Newspaper,
+  ClipboardList,
+  Monitor,
+  RefreshCw,
+  Zap,
 } from "lucide-react";
 
 export default function CourseDetail({ course, related = [] }: { course: Course; related?: Course[] }) {
   const [openModules, setOpenModules] = useState<Set<number>>(new Set([0]));
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
+  const [activeDemo, setActiveDemo] = useState<number | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [enrollChecked, setEnrollChecked] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showPassModal, setShowPassModal] = useState(false);
+  const [showTncModal, setShowTncModal] = useState(false);
+  const [tncChecked, setTncChecked] = useState(false);
+  const [tncSaving, setTncSaving] = useState(false);
+  const [passTncChecked, setPassTncChecked] = useState(false);
   const [paying, setPaying] = useState(false);
   const [paySuccess, setPaySuccess] = useState(false);
 
@@ -51,6 +65,8 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       setIsLoggedIn(!!user);
       if (user) {
+        // Finish any purchase whose checkout never reported back
+        await recoverPendingOrders();
         // Check enrollment for this course
         const res = await fetch("/api/enrollments");
         const { enrollments } = await res.json();
@@ -68,19 +84,15 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
     return () => subscription.unsubscribe();
   }, [course.slug]);
 
-  const handleEnroll = async () => {
-    trackEvent(course.slug, "enroll_click");
-    if (!isLoggedIn) {
-      setShowLoginModal(true);
-      return;
-    }
+  const PASS_PRICE = 1999;
+
+  const proceedToPayment = async () => {
     const priceRupees = parseRupees(course.price);
     if (!priceRupees || priceRupees <= 0) {
-      // Free course — record enrollment then redirect
       await fetch("/api/enrollments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseSlug: course.slug, paymentStatus: "free" }),
+        body: JSON.stringify({ courseSlug: course.slug }),
       });
       setIsEnrolled(true);
       window.location.href = `/course/${course.slug}/learn`;
@@ -91,16 +103,61 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
       amountRupees: priceRupees,
       name: "The Law Project",
       description: course.title,
-      onSuccess: async (paymentId) => {
+      purchase: { kind: "course", courseSlug: course.slug },
+      onSuccess: async (_paymentId, orderId) => {
         setPaying(false);
         setPaySuccess(true);
         setIsEnrolled(true);
         trackEvent(course.slug, "payment_success");
-        await fetch("/api/enrollments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ courseSlug: course.slug, paymentStatus: "paid" }),
-        });
+        await verifyOrder(orderId);
+        setTimeout(() => { window.location.href = `/course/${course.slug}/learn`; }, 1800);
+      },
+      onFailure: () => setPaying(false),
+    });
+  };
+
+  const handleTncAgree = async () => {
+    setTncSaving(true);
+    await fetch("/api/record-tnc", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseSlug: course.slug }),
+    });
+    setTncSaving(false);
+    setShowTncModal(false);
+    setTncChecked(false);
+    await proceedToPayment();
+  };
+
+  const handleEnroll = async () => {
+    trackEvent(course.slug, "enroll_click");
+    if (!isLoggedIn) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    if (course.requiresTnc && course.tncContent) {
+      setShowTncModal(true);
+      return;
+    }
+
+    await proceedToPayment();
+  };
+
+  const handlePassCheckout = async () => {
+    setShowPassModal(false);
+    setPaying(true);
+    await openRazorpayCheckout({
+      amountRupees: PASS_PRICE,
+      name: "The Law Project",
+      description: "TLP All-Access Plan",
+      purchase: { kind: "pass" },
+      onSuccess: async (_paymentId, orderId) => {
+        setPaying(false);
+        setPaySuccess(true);
+        setIsEnrolled(true);
+        trackEvent(course.slug, "payment_success");
+        await verifyOrder(orderId);
         setTimeout(() => { window.location.href = `/course/${course.slug}/learn`; }, 1800);
       },
       onFailure: () => setPaying(false),
@@ -121,6 +178,28 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
 
   const totalLectures = course.modules.reduce((sum, m) => sum + (m.lessonsCount ?? m.items.length), 0);
 
+  function getYouTubeEmbedUrl(url: string): string | null {
+    if (!url) return null;
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    ];
+    for (const re of patterns) {
+      const m = url.match(re);
+      if (m) return `https://www.youtube.com/embed/${m[1]}?autoplay=1&rel=0`;
+    }
+    return null;
+  }
+
+  const demoVideos = [
+    course.demoVideoUrl,
+    course.demoVideoUrl2,
+    course.demoVideoUrl3,
+  ]
+    .map((url, i) => ({ label: `Demo ${i + 1}`, embedUrl: url ? getYouTubeEmbedUrl(url) : null }))
+    .filter((d) => d.embedUrl !== null) as { label: string; embedUrl: string }[];
+
+  const activeDemoUrl = activeDemo !== null ? demoVideos[activeDemo]?.embedUrl ?? null : null;
+
   const info = [
     { icon: Clock, label: "Duration:", value: course.duration },
     { icon: Play, label: "Lesson:", value: course.lessons },
@@ -134,14 +213,64 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
     <main className="min-h-screen bg-white dark:bg-gray-900 overflow-x-hidden">
       <Navbar />
 
-      <section className="bg-gray-50 dark:bg-gray-800 pt-28 sm:pt-28 pb-8 sm:pb-12 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-5 sm:gap-10 items-center">
-          <img
-            src={course.img}
-            alt={course.title}
-            className="block w-full max-w-full h-48 sm:h-96 object-cover rounded-2xl"
+      <section className="bg-gray-50 dark:bg-gray-800 pt-40 sm:pt-44 lg:pt-36 pb-8 sm:pb-12 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-[3fr_2fr] gap-5 sm:gap-10 items-center">
+          <div
+            className="relative w-full h-48 sm:h-96 rounded-2xl overflow-hidden"
             style={{ animation: "tlpSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both" }}
-          />
+          >
+            {/* YouTube player */}
+            {activeDemoUrl && (
+              <iframe
+                src={activeDemoUrl}
+                title="Course Demo"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full border-0"
+              />
+            )}
+
+            {/* Course image + central play button (shown when no demo is active) */}
+            {!activeDemoUrl && (
+              <>
+                <img src={course.img} alt={course.title} className="w-full h-full object-cover" />
+                {demoVideos.length > 0 && (
+                  <button
+                    onClick={() => setActiveDemo(0)}
+                    className="absolute inset-0 flex flex-col items-center justify-center gap-3 group"
+                    aria-label="Play demo"
+                  >
+                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/45 transition-colors" />
+                    <div className="relative z-10 w-14 h-14 sm:w-16 sm:h-16 bg-white/95 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-200">
+                      <Play className="w-6 h-6 sm:w-7 sm:h-7 text-gray-900 fill-gray-900 ml-1" />
+                    </div>
+                    <span className="relative z-10 text-white text-sm sm:text-base font-semibold tracking-wide drop-shadow">
+                      Play Demo
+                    </span>
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* Demo switcher buttons — bottom-right, shown whenever demos exist */}
+            {demoVideos.length > 0 && (
+              <div className="absolute bottom-3 right-3 z-20 flex gap-1.5">
+                {demoVideos.map((d, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveDemo(i)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150 shadow ${
+                      activeDemo === i
+                        ? "bg-white text-gray-900"
+                        : "bg-black/50 text-white hover:bg-black/70"
+                    }`}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="min-w-0 w-full" style={{ animation: "tlpSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both" }}>
             <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500 mb-3 min-w-0">
@@ -160,21 +289,40 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
               </div>
             )}
 
-            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 flex-wrap">
-              <span className="flex items-center gap-0.5">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
+              <div className="flex items-center gap-0.5">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 fill-yellow-400" />
                 ))}
-              </span>
-              {course.reviewsCount} <span className="text-gray-300">|</span> {course.students} Student Enrolled
+              </div>
+              {course.startDate && (
+                <span className="flex items-center gap-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                  <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                  Starts {course.startDate}
+                </span>
+              )}
             </div>
 
-            <div className="flex items-baseline gap-2 sm:gap-3 mb-4 sm:mb-6">
-              <span className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white">₹{course.price}</span>
-              <span className="text-sm sm:text-lg text-gray-400 line-through">₹{course.oldPrice}</span>
+            <div className="mb-4 sm:mb-6">
+              <div className="flex items-baseline gap-2 sm:gap-3">
+                <span className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white">₹{course.price}</span>
+                <span className="text-sm sm:text-lg text-gray-400 line-through">₹{course.oldPrice}</span>
+              </div>
+              {course.showOfferValidity && course.offerValidTill && (
+                <p className="text-xs text-red-500 font-medium mt-1">
+                  Offer valid till {course.offerValidTill}
+                </p>
+              )}
             </div>
 
-            {!enrollChecked ? (
+            {course.isComingSoon ? (
+              <button
+                disabled
+                className="w-full bg-amber-500 text-white px-6 py-3 rounded-lg text-sm font-semibold cursor-not-allowed opacity-90 flex items-center justify-center gap-2"
+              >
+                🔒 Coming Soon
+              </button>
+            ) : !enrollChecked ? (
               <div className="w-full h-11 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
             ) : isEnrolled ? (
               <a href={`/course/${course.slug}/learn`}
@@ -182,13 +330,15 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
                 Start Learning
               </a>
             ) : (
-              <button
-                onClick={handleEnroll}
-                disabled={paying}
-                className="w-full bg-black text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {paySuccess ? "✓ Payment Successful! Redirecting…" : paying ? "Processing…" : "Enroll now"}
-              </button>
+              <>
+                <button
+                  onClick={handleEnroll}
+                  disabled={paying}
+                  className="w-full bg-black text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {paySuccess ? "✓ Payment Successful! Redirecting…" : paying ? "Processing…" : "Enroll now"}
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -288,7 +438,14 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
                   </li>
                 ))}
               </ul>
-              {!enrollChecked ? (
+              {course.isComingSoon ? (
+                <button
+                  disabled
+                  className="w-full bg-amber-500 text-white rounded-lg py-2.5 text-sm font-semibold cursor-not-allowed opacity-90 flex items-center justify-center gap-2"
+                >
+                  🔒 Coming Soon
+                </button>
+              ) : !enrollChecked ? (
                 <div className="w-full h-10 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
               ) : isEnrolled ? (
                 <a href={`/course/${course.slug}/learn`}
@@ -389,6 +546,202 @@ export default function CourseDetail({ course, related = [] }: { course: Course;
       </section>
 
       <Footer />
+
+      {/* T&C Agreement modal */}
+      <AnimatePresence>
+        {showTncModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) { setShowTncModal(false); setTncChecked(false); } }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 50 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-white dark:bg-gray-900 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh]"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between px-5 pt-5 pb-4 flex-shrink-0 border-b border-gray-100 dark:border-gray-700">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-600 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider mb-2">
+                    <FileText className="w-3 h-3" /> Terms & Conditions
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">Before you enroll</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Please read and agree to the terms below.</p>
+                </div>
+                <button
+                  onClick={() => { setShowTncModal(false); setTncChecked(false); }}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0 ml-3 mt-0.5"
+                >
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Scrollable T&C body */}
+              <div className="overflow-y-auto flex-1 px-5 py-4">
+                {course.tncContent ? (
+                  <pre className="whitespace-pre-wrap text-sm text-gray-600 dark:text-gray-400 leading-relaxed font-sans">
+                    {course.tncContent}
+                  </pre>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">No terms and conditions text has been set for this course yet.</p>
+                )}
+              </div>
+
+              {/* Sticky footer */}
+              <div className="flex-shrink-0 border-t border-gray-100 dark:border-gray-700 px-5 py-4 bg-white dark:bg-gray-900 space-y-3">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={tncChecked}
+                    onChange={(e) => setTncChecked(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer flex-shrink-0"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300 leading-snug group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                    I have read and agree to the Terms & Conditions stated above.
+                  </span>
+                </label>
+                <button
+                  onClick={handleTncAgree}
+                  disabled={!tncChecked || tncSaving}
+                  className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3.5 rounded-xl text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {tncSaving ? "Saving…" : <><Check className="w-4 h-4" /> I Agree — Proceed to Enroll</>}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* TLP All-Access Pass modal */}
+      <AnimatePresence>
+        {showPassModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) { setShowPassModal(false); setPassTncChecked(false); } }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 50 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-white dark:bg-gray-900 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh]"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between px-5 pt-5 pb-4 flex-shrink-0 border-b border-gray-100 dark:border-gray-700">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 bg-primary-50 dark:bg-primary-900/30 text-primary-600 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider mb-2">
+                    <Zap className="w-3 h-3" /> Special Offer
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">TLP All-Access Plan</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">One pass. Every exam. All content.</p>
+                </div>
+                <button
+                  onClick={() => { setShowPassModal(false); setPassTncChecked(false); }}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0 ml-3 mt-0.5"
+                >
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Scrollable body */}
+              <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
+
+                {/* Price banner */}
+                <div className="bg-gradient-to-r from-primary-600 to-blue-600 rounded-2xl p-4 text-white flex items-center justify-between">
+                  <div>
+                    <p className="text-white/70 text-xs font-medium">Annual subscription</p>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <span className="text-3xl font-bold">₹1,999</span>
+                      <span className="text-white/60 text-sm line-through">₹4,999</span>
+                    </div>
+                    <p className="text-white/80 text-xs mt-1">Less than ₹6/day · 365 days access</p>
+                  </div>
+                  <div className="bg-white/20 rounded-xl px-3 py-2 text-center flex-shrink-0">
+                    <p className="text-[10px] font-semibold text-white/80">YOU SAVE</p>
+                    <p className="text-lg font-bold text-white">60%</p>
+                  </div>
+                </div>
+
+                {/* Terms & Conditions */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-3.5 h-3.5 text-amber-600" />
+                    </div>
+                    <h3 className="font-bold text-gray-900 dark:text-white text-sm">Terms &amp; Conditions</h3>
+                  </div>
+                  <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30 rounded-xl p-3.5 space-y-2.5 text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                    {[
+                      ["1. Subscription", "The Plan grants access to TLP's digital content library for 12 months from the date of successful payment, at the price displayed at checkout."],
+                      ["2. Early Access / Advance Booking", "This subscription is offered as an early access / advance booking purchase. The TLP All-Access web portal shall become operational, and content shall be made available to subscribers, with effect from September 1, 2026. Purchases made before this date secure early access at the applicable price; access to content will commence from the launch date stated above."],
+                      ["3. Content Rollout", "Content is added in a phased, ongoing manner and not made available all at once. TLP does not commit to a fixed date, volume, or sequence for uploading specific topics or exam-wise material. Subscribing does not guarantee that all listed exam categories will have complete content within the 12-month period. All new content added during the subscription period is included at no extra cost."],
+                      ["4. Nature of Content", "The TLP All-Access Plan is designed as a broad-based learning resource covering multiple law exams and legal courses under a single subscription. The content is generic in nature — built around core legal subjects and concepts common across exams — supplemented with exam-specific guidance and resources where applicable. Content under this Plan is not customised or tailor-made for any individual exam or individual needs; it is designed to support a subscriber's overall preparation across the exams listed on this Plan."],
+                      ["5. Single-User Access", "Access is for one named user only. Account or credential sharing may result in suspension without refund."],
+                      ["6. Intellectual Property", "All content is the property of TLP / Bhavtosh A. It is for personal study only; reproduction, redistribution, or resale is prohibited and may lead to termination of access and legal action."],
+                      ["7. No Guarantee of Outcomes", "TLP does not guarantee admission, selection, or exam results. Subscribers should verify exam-specific syllabus, eligibility, and pattern changes with official sources."],
+                      ["8. Refunds", "No refunds will be provided once a subscription is purchased, except where TLP is unable to provide the course/content as planned, in which case a refund (full or prorated, at TLP's discretion) will be considered."],
+                      ["9. Changes to Terms", "TLP may update these Terms or modify Plan content/features at any time; continued use after changes constitutes acceptance."],
+                      ["10. Governing Law", "These terms are governed by the laws of India, subject to the exclusive jurisdiction of the courts at Jaipur, Rajasthan."],
+                    ].map(([title, body]) => (
+                      <div key={title}>
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">{title} — </span>{body}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Sticky footer */}
+              <div className="flex-shrink-0 border-t border-gray-100 dark:border-gray-700 px-5 py-4 bg-white dark:bg-gray-900">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-xs text-gray-500">To Pay</p>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-2xl font-bold text-gray-900 dark:text-white">₹1,999</span>
+                      <span className="text-sm text-gray-400 line-through">₹4,999</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-green-600 font-semibold">You save ₹3,000</p>
+                    <p className="text-[11px] text-gray-400">365 days · all exams</p>
+                  </div>
+                </div>
+                <label className="flex items-start gap-2.5 cursor-pointer mb-3">
+                  <input
+                    type="checkbox"
+                    checked={passTncChecked}
+                    onChange={(e) => setPassTncChecked(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer flex-shrink-0"
+                  />
+                  <span className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                    I have read and agree to the Terms &amp; Conditions above.
+                  </span>
+                </label>
+                <button
+                  onClick={handlePassCheckout}
+                  disabled={paying || !passTncChecked}
+                  className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3.5 rounded-xl text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {paying ? "Processing…" : <><Zap className="w-4 h-4" /> Get Pass — ₹1,999/yr</>}
+                </button>
+                <p className="text-center text-[11px] text-gray-400 mt-2">
+                  Secure payment via Razorpay · Less than ₹6/day
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Login-to-purchase modal */}
       <AnimatePresence>

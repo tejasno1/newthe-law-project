@@ -14,7 +14,7 @@ export default async function AdminCourseEditPage({
   const { data: course, error } = await supabaseAdmin
     .from("courses")
     .select(
-      "slug, title, desc, long_desc, category, price, old_price, duration, lessons, level, language, files, rating, students, img, access_type, delivery_type, modules, outcomes, ideal_for, faqs"
+      "slug, title, desc, long_desc, category, price, old_price, duration, lessons, level, language, files, rating, students, img, access_type, delivery_type, requires_tnc, tnc_content, modules, outcomes, ideal_for, faqs, is_coming_soon, start_date, offer_valid_till, show_offer_validity, enrollment_email, demo_video_url, demo_video_url_2, demo_video_url_3"
     )
     .eq("slug", params.slug)
     .maybeSingle();

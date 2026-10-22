@@ -91,7 +91,7 @@ const HeroSection2 = () => {
         {/* Mobile-only background image */}
         <div className="absolute inset-0 pointer-events-none select-none block sm:hidden">
           <img
-            src="/tlpherosectionmobileview.png"
+            src="https://ysgzglccgrqbxxxhxthe.supabase.co/storage/v1/object/sign/bannerimages/homepagemobileview.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wZjU4YTFjNi02NmE1LTRjNWYtYWI0MS0yN2QxNjhmM2NkMDgiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJiYW5uZXJpbWFnZXMvaG9tZXBhZ2Vtb2JpbGV2aWV3LmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODYyMDAzMzksImV4cCI6MjEwMTU2MDMzOX0.x7WnNg_HxPbDhiKocrotJRxe4m43zMRgsBHjzNJmoLQ"
             alt=""
             className="w-full h-full object-cover [object-position:40%_52%]"
             draggable={false}
@@ -105,7 +105,7 @@ const HeroSection2 = () => {
         {/* Desktop-only background image */}
         <div className="absolute inset-0 pointer-events-none select-none hidden sm:block">
           <img
-            src="/tlpherosectionhome.svg"
+            src="https://ysgzglccgrqbxxxhxthe.supabase.co/storage/v1/object/sign/bannerimages/homepagebannertop.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wZjU4YTFjNi02NmE1LTRjNWYtYWI0MS0yN2QxNjhmM2NkMDgiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJiYW5uZXJpbWFnZXMvaG9tZXBhZ2ViYW5uZXJ0b3AuanBnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4NjE5OTc3NiwiZXhwIjoxODE3NzM1Nzc2fQ.-deY44vJS8duwdP8tGilBmO7GumPVwlFdeoZjjqNYHU"
             alt=""
             className="w-full h-full object-cover object-top sm:object-contain lg:object-cover"
             draggable={false}
@@ -115,7 +115,7 @@ const HeroSection2 = () => {
 
         {/* Text content */}
         <div
-          className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-36 lg:pt-32 pb-2 sm:pb-4"
+          className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[9.5rem] sm:pt-[11.5rem] lg:pt-[10.5rem] pb-2 sm:pb-4"
           style={{ animation: "tlpSlideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both" }}
         >
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -126,13 +126,13 @@ const HeroSection2 = () => {
               <h1 className="text-xl sm:text-5xl lg:text-[76px] lg:leading-[76px] font-semibold text-gray-900 dark:text-white leading-tight mb-2 sm:mb-5 sm:mt-0">
                 Build the Legal Career<br className="hidden sm:inline lg:hidden" /> <span className="text-primary-600">You Deserve.</span>
               </h1>
-              <p className="text-sm sm:text-lg text-gray-700 sm:text-gray-500 dark:text-gray-300 sm:dark:text-gray-400 mb-2 sm:mb-6 max-w-lg">
+              <p className="text-xs sm:text-lg text-gray-700 sm:text-gray-500 dark:text-gray-300 sm:dark:text-gray-400 mb-2 sm:mb-6 lg:mb-2 max-w-lg">
                 Begin your legal journey with top-tier mentorship. Explore preparation strategies designed for elite legal opportunities.
               </p>
-              <div className="flex justify-center sm:justify-start">
-                <button className="bg-primary-600 text-white px-6 py-3 rounded-xl text-sm leading-[21px] font-medium flex items-center gap-2 hover:bg-primary-700 transition-colors">
-                  Enroll now <ArrowRight className="w-4 h-4" />
-                </button>
+              <div className="flex justify-center sm:justify-start mb-8 sm:mb-0">
+                <Link href="/course" className="bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-xl text-xs sm:text-sm leading-[18px] sm:leading-[21px] font-medium flex items-center gap-2 hover:bg-primary-700 transition-colors">
+                  Explore Now <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </Link>
               </div>
 
             </div>
@@ -140,16 +140,11 @@ const HeroSection2 = () => {
           </div>
         </div>
 
-        {/* Attribution — absolutely positioned right of Bhavtosh's head on all viewports */}
-        <div className="absolute top-[63%] sm:top-[22%] lg:top-[38%] right-[9%] sm:right-[4%] lg:right-[3%] z-10">
-          <p className="text-[11px] sm:text-sm lg:text-lg font-bold italic text-gray-900 dark:text-white leading-tight">Bhavtosh Agrawal</p>
-          <p className="text-[8px] sm:text-[9px] lg:text-[11px] text-gray-600 dark:text-gray-400 -mt-0.5 sm:max-w-[80px] lg:max-w-none">NLU Graduate · Founder,<br className="sm:hidden" /> The Law Project</p>
-        </div>
 
       </section>
 
       {/* Stat cards — overlap on desktop, slight pull-up on mobile */}
-      <div className="relative z-20 -mt-16 sm:-mt-56 lg:-mt-44 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+      <div className="relative z-20 -mt-16 sm:-mt-56 lg:-mt-36 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
         <div ref={statsRef} className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
           {stats.map((stat, i) => (
             <div
@@ -180,21 +175,13 @@ const HeroSection2 = () => {
 
 const GrandLaunchSection = () => {
   const COURSE = {
-    category: "CLAT PG",
-    title: "CLAT PG Mastery — Independence Day Edition",
-    instructor: "Bhavtosh Agrawal",
-    description: "A flagship programme launching on Independence Day — bringing together structured curriculum, live mentorship, and real exam-ready content for serious law aspirants preparing for CLAT PG, Judiciary & AIBE.",
-    bullets: [
-      "Live classes + recorded lectures, accessible anytime",
-      "Designed by practising lawyers & faculty",
-      "Full coverage — CLAT PG, Judiciary & AIBE",
-    ],
-    img: "",
-    ctaHref: "/course",
+    img: "https://ysgzglccgrqbxxxhxthe.supabase.co/storage/v1/object/sign/bannerimages/allaccesscoverimage.jpeg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wZjU4YTFjNi02NmE1LTRjNWYtYWI0MS0yN2QxNjhmM2NkMDgiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJiYW5uZXJpbWFnZXMvYWxsYWNjZXNzY292ZXJpbWFnZS5qcGVnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4NjI1MjU3OSwiZXhwIjoxODE3Nzg4NTc5fQ.rt-eJPENVW14H5fd06rY3jiNwf0BIECYvLC9acF8rlo",
+    ctaHref: "/course/tlp-all-access-plan",
   };
 
+
   return (
-    <section className="relative py-6 sm:py-10 lg:py-14 bg-gray-50 dark:bg-gray-800">
+    <section className="relative pt-6 sm:pt-10 lg:pt-14 pb-2 sm:pb-4 lg:pb-6 bg-gray-50 dark:bg-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">
 
@@ -203,20 +190,13 @@ const GrandLaunchSection = () => {
             <div>
               <div className="inline-flex items-center gap-2 bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800/40 rounded-full px-3 py-1 mb-2">
                 <span className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-pulse flex-shrink-0" />
-                <span className="text-primary-700 dark:text-primary-400 text-[10px] sm:text-[11px] font-bold tracking-widest uppercase">Grand Launch · 15 August 2026</span>
+                <span className="text-primary-700 dark:text-primary-400 text-[10px] sm:text-[11px] font-bold tracking-widest uppercase">Grand Launch · 12 August 2026</span>
               </div>
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                <span className="text-gradient">New</span> Launch
+                <span className="text-gradient">All Access</span> Course
               </h2>
               <p className="text-gray-500 dark:text-gray-400 mt-1 text-xs sm:text-sm">Launching on Independence Day — our most comprehensive law programme yet</p>
             </div>
-            {/* Hidden on mobile — shown on sm+ */}
-            <Link
-              href={COURSE.ctaHref}
-              className="hidden sm:inline-flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
-            >
-              View All Courses <ArrowRight className="w-4 h-4" />
-            </Link>
           </div>
 
           {/* Single landscape course card */}
@@ -232,7 +212,10 @@ const GrandLaunchSection = () => {
               {/* Image side */}
               <div className="relative h-44 sm:h-full sm:min-h-[260px] lg:min-h-[280px] bg-gradient-to-br from-primary-50 via-blue-50 to-gray-100 dark:from-primary-950 dark:via-gray-900 dark:to-gray-800 overflow-hidden">
                 {COURSE.img ? (
-                  <img src={COURSE.img} alt={COURSE.title} className="w-full h-full object-cover" />
+                  <>
+                    <img src="https://ysgzglccgrqbxxxhxthe.supabase.co/storage/v1/object/sign/bannerimages/allaccesscoverimagemobileview.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wZjU4YTFjNi02NmE1LTRjNWYtYWI0MS0yN2QxNjhmM2NkMDgiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJiYW5uZXJpbWFnZXMvYWxsYWNjZXNzY292ZXJpbWFnZW1vYmlsZXZpZXcucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4NjI1MzE0MSwiZXhwIjoxODE3Nzg5MTQxfQ.tdeTOuDZuvh6f1mclxhd6yjYmW72ZYInX2UYUqgHTig" alt="TLP All Access Course" className="w-full h-full object-cover block sm:hidden" />
+                    <img src={COURSE.img} alt="TLP All Access Course" className="w-full h-full object-cover hidden sm:block" />
+                  </>
                 ) : (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 select-none pointer-events-none">
                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-primary-100 dark:bg-primary-600/15 border border-primary-200 dark:border-primary-500/20 flex items-center justify-center">
@@ -241,51 +224,69 @@ const GrandLaunchSection = () => {
                     <p className="text-gray-400 dark:text-gray-600 text-[10px] font-medium tracking-wide uppercase">Cover image coming soon</p>
                   </div>
                 )}
-                {/* Category badge */}
+                {/* All Access badge */}
                 <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3">
-                  <span className="bg-black/80 text-white text-[11px] sm:text-xs font-medium px-2.5 sm:px-3 py-1 rounded-full">{COURSE.category}</span>
+                  <span className="bg-black/80 text-white text-[11px] sm:text-xs font-medium px-2.5 sm:px-3 py-1 rounded-full">All Access</span>
                 </div>
                 {/* Launch date badge */}
                 <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3">
                   <span className="bg-white/90 dark:bg-gray-900/80 backdrop-blur-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 text-[11px] sm:text-xs font-medium px-2 sm:px-2.5 py-1 rounded-lg">
-                    🇮🇳 15 Aug 2026
+                    🇮🇳 12 Aug 2026
                   </span>
                 </div>
               </div>
 
               {/* Content side */}
-              <div className="p-4 sm:p-5 lg:p-7 flex flex-col justify-between gap-3 sm:gap-5">
+              <div className="p-4 sm:p-5 lg:p-7 flex flex-col justify-between gap-4">
+
+                {/* Top: branding + headline + price */}
                 <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white text-base sm:text-lg lg:text-xl leading-snug mb-1">
-                    {COURSE.title}
+                  {/* Headline */}
+                  <h3 className="font-extrabold text-gray-900 dark:text-white text-lg sm:text-xl lg:text-2xl leading-tight mb-1">
+                    One Plan for <span className="text-gradient">All Exams</span>
                   </h3>
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3">by {COURSE.instructor}</p>
-                  {/* Description hidden on mobile — shown sm+ */}
-                  <p className="hidden sm:block text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4 line-clamp-2 lg:line-clamp-3">
-                    {COURSE.description}
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3">
+                    For anyone preparing for one or more law exams
                   </p>
-                  <div className="flex flex-col gap-1.5 sm:gap-2">
-                    {COURSE.bullets.map((b, i) => (
-                      <div key={i} className={`flex items-center gap-2 sm:gap-2.5 text-xs sm:text-sm text-gray-600 dark:text-gray-300 ${i === 2 ? "hidden sm:flex" : ""}`}>
-                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
-                          <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary-600 dark:text-primary-400" />
-                        </div>
-                        {b}
+
+                  {/* Price */}
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-2xl sm:text-3xl font-extrabold text-primary-600 dark:text-primary-400">₹1,999</span>
+                    <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">/ year</span>
+                  </div>
+                  <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mb-4">
+                    TLP · The Law Project &nbsp;·&nbsp; Legal Education for All
+                  </p>
+
+                  {/* Stats grid */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-3 mb-2">
+                    {[
+                      { value: "35+",       label: "Exams Covered" },
+                      { value: "50+",       label: "Law Subjects" },
+                      { value: "500+",      label: "Modules of Law" },
+                      { value: "500+",      label: "Video Lectures" },
+                      { value: "4,500+",    label: "Hours of Content" },
+                      { value: "10,000+",   label: "Practice Questions" },
+                      { value: "6,000+",    label: "Topics of Law" },
+                      { value: "Unlimited", label: "Short Notes" },
+                    ].map(({ value, label }) => (
+                      <div key={label} className="flex flex-col gap-0.5 min-w-0">
+                        <span className="text-sm sm:text-base font-extrabold text-primary-600 dark:text-primary-400 leading-none">{value}</span>
+                        <span className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 leading-snug">{label}</span>
                       </div>
                     ))}
                   </div>
+
                 </div>
 
-                {/* Bottom row — stacks on mobile, side-by-side on sm+ */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 sm:pt-4 border-t border-gray-100 dark:border-gray-700">
-                  <div>
-                    <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide">Launching</p>
-                    <p className="font-bold text-gray-900 dark:text-white text-sm sm:text-base">15 August 2026</p>
-                  </div>
-                  <span className="inline-flex items-center justify-center gap-1.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm transition-colors w-full sm:w-auto">
-                    Get Early Access <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                {/* CTA */}
+                <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
+                  <span className="inline-flex items-center justify-center gap-1.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold px-5 py-2.5 rounded-xl text-xs sm:text-sm transition-colors w-full">
+                    Know More <ArrowRight className="w-3.5 h-3.5" />
                   </span>
+                  <p className="text-center text-[10px] text-gray-400 dark:text-gray-500 mt-2">Launching 12 August 2026 · Less than ₹6/day</p>
                 </div>
+
               </div>
 
             </Link>
@@ -368,7 +369,7 @@ const CategoriesSection = () => {
   ];
 
   return (
-    <section id="overview" className="pt-12 sm:pt-20 lg:pt-28 pb-6 sm:pb-10 bg-white dark:bg-gray-900 relative overflow-hidden">
+    <section id="overview" className="pt-6 sm:pt-10 lg:pt-12 pb-4 sm:pb-6 bg-white dark:bg-gray-900 relative overflow-hidden">
       {/* Dot grid background */}
       <div
         className="absolute inset-0 opacity-[0.018] dark:opacity-[0.04] pointer-events-none"
@@ -504,7 +505,7 @@ const FeaturedCourses = () => {
   const skeletons = [0, 1, 2];
 
   return (
-    <section id="courses" className="py-8 sm:py-14 bg-gray-50 dark:bg-gray-800">
+    <section id="courses" className="py-6 sm:py-10 bg-gray-50 dark:bg-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3xl p-6 sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
@@ -583,9 +584,9 @@ const Curriculum = () => {
       label: "Notes & Resources",
       Icon: BookOpen,
       title: "Rich study notes with every session,",
-      highlight: "ready to download",
+      highlight: "ready to revise",
       description: "Every live and recorded class comes with structured PDF notes, case study booklets, and legal reference sheets — curated by Bhavtosh Agrawal for maximum retention and quick revision.",
-      features: ["Downloadable PDF notes for every lecture", "Case study booklets & legal drafting templates"],
+      features: ["PDF notes for every lecture", "Case study booklets & legal drafting templates"],
     },
     {
       id: 1,
@@ -602,8 +603,8 @@ const Curriculum = () => {
       Icon: BarChart3,
       title: "Full-length practice tests with deep",
       highlight: "performance analytics",
-      description: "Attempt full-length CLAT PG and subject-wise mock exams. Get a detailed breakdown of your accuracy, time spent, and topic-wise performance to smartly direct your revision.",
-      features: ["Full-length CLAT PG & AILET mock series", "Topic-wise accuracy & performance reports"],
+      description: "Attempt full-length CLAT-PG, CLAT-UG, Judiciary and subject-wise mock exams. Get a detailed breakdown of your accuracy, time spent, and topic-wise performance to smartly direct your revision.",
+      features: ["Full-length CLAT-UG, CLAT-PG & Judiciary mock series", "Topic-wise accuracy & performance reports"],
     },
     {
       id: 3,
@@ -619,7 +620,7 @@ const Curriculum = () => {
   const t = tabs[activeTab];
 
   return (
-    <section id="features" className="py-12 sm:py-20 lg:py-24 bg-white dark:bg-gray-900 px-4 sm:px-6 lg:px-8">
+    <section id="features" className="py-8 sm:py-12 lg:py-16 bg-white dark:bg-gray-900 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto flex flex-col items-center">
 
         {/* Header */}
@@ -812,6 +813,40 @@ const Curriculum = () => {
 const AlumniSection = () => {
   type Card = { avatar: string; name: string; role: string; rating: number; text: string };
 
+  const FALLBACK_COL1: Card[] = [
+    { avatar: "https://i.pravatar.cc/64?img=44", name: "TLP Student", role: "CLAT Aspirant", rating: 5, text: "I started my CLAT preparation from absolute scratch and knew very little when I joined. Bhavtosh Agrawal was leading the faculty there, and the guidance and support I received from him had a significant impact on my preparation. Beyond academics, Sir was always there whenever I needed guidance outside the classroom, and his encouragement helped me stay focused. The mocks, feedback, and constant guidance made the journey much less overwhelming. I'm genuinely grateful for everything I learned from him and for the role he played in my journey." },
+    { avatar: "https://i.pravatar.cc/64?img=20", name: "TLP Student", role: "Student at NLSIU Bangalore", rating: 5, text: "I honestly wouldn't have made it to NLSIU without sir's guidance. He always knew exactly when to push scores, when to motivate, and when to keep things simple. Learning from him never felt stressful — something not normal in CLAT preparation — and I'm really grateful for everything he did for me." },
+    { avatar: "https://i.pravatar.cc/64?img=15", name: "Naman Devpura", role: "CLAT Aspirant", rating: 5, text: "Bhavtosh Agrawal played a formative role in helping me crack CLAT, guiding me to devise an effective strategy to capitalise on my strengths and address my weaknesses. Beyond just covering the syllabus, he instilled a sense of calm and clarity whenever the pressure felt overwhelming. I still reach out to him, and his words continue to anchor me in my most challenging moments. He taught me early on that true progress requires discipline and the character not to be led astray by shortcuts." },
+  ];
+  const FALLBACK_COL2: Card[] = [
+    { avatar: "https://i.pravatar.cc/64?img=49", name: "TLP Student", role: "NLU Graduate | Legal Professional", rating: 5, text: "When I first began my CLAT preparation, the sheer volume of legal concepts felt completely daunting. That entirely changed once Bhavtosh Agrawal started teaching us. He possesses a rare gift for translating complex legal methods into engaging stories and practical, out-of-the-box scenarios. His classes were always fun and vibrant. He built my conceptual clarity so thoroughly that tackling CLAT almost felt like a game. What sets him apart is his genuine investment in his students — he is a mentor and an older brother figure who truly wants to see you succeed. The foundation he built gave me the critical reasoning skills I relied on throughout university and into my professional career." },
+    { avatar: "https://i.pravatar.cc/64?img=29", name: "Akanksha", role: "3rd Year, NALSAR | AIR 121, CLAT", rating: 5, text: "I am Akanksha, a third year student at NALSAR, one of the best law colleges in India. I secured AIR 121 in my CLAT exam but I had never dreamt of securing this when I first started my preparation at ALLEN CLAT coaching where Bhavtosh Agrawal was our legal reasoning faculty. He was one of the major cornerstones throughout my preparation — not just as a professor, but as a mentor. I still remember running to him after every mock paper, anxious and scared, and he always listened calmly. His pep talk before the CLAT exam was the reason I walked into that exam hall and cracked it." },
+  ];
+
+  const [col1, setCol1] = React.useState<Card[]>([...FALLBACK_COL1, ...FALLBACK_COL1]);
+  const [col2, setCol2] = React.useState<Card[]>([...FALLBACK_COL2, ...FALLBACK_COL2]);
+
+  React.useEffect(() => {
+    fetch("/api/testimonials")
+      .then(r => r.json())
+      .then((data: { name: string; role: string; avatar_url: string | null; rating: number; body: string }[]) => {
+        if (!Array.isArray(data) || data.length === 0) return;
+        const cards: Card[] = data.map(t => ({
+          avatar: t.avatar_url || `https://i.pravatar.cc/64?u=${encodeURIComponent(t.name)}`,
+          name: t.name,
+          role: t.role,
+          rating: t.rating,
+          text: t.body,
+        }));
+        const half = Math.ceil(cards.length / 2);
+        const c1 = cards.slice(0, half);
+        const c2 = cards.slice(half);
+        setCol1([...c1, ...c1]);
+        setCol2(c2.length > 0 ? [...c2, ...c2] : [...c1, ...c1]);
+      })
+      .catch(() => {});
+  }, []);
+
   const StarIcon = ({ filled, half }: { filled?: boolean; half?: boolean }) => (
     <svg width="15" height="15" viewBox="0 0 18 18" className="shrink-0">
       {half && (
@@ -853,84 +888,8 @@ const AlumniSection = () => {
     </div>
   );
 
-  const col1: Card[] = [
-    {
-      avatar: "https://i.pravatar.cc/64?img=44",
-      name: "TLP Student",
-      role: "CLAT Aspirant",
-      rating: 5,
-      text: "I started my CLAT preparation from absolute scratch and knew very little when I joined. Bhavtosh Agrawal was leading the faculty there, and the guidance and support I received from him had a significant impact on my preparation. Beyond academics, Sir was always there whenever I needed guidance outside the classroom, and his encouragement helped me stay focused. The mocks, feedback, and constant guidance made the journey much less overwhelming. I'm genuinely grateful for everything I learned from him and for the role he played in my journey.",
-    },
-    {
-      avatar: "https://i.pravatar.cc/64?img=20",
-      name: "TLP Student",
-      role: "Student at NLSIU Bangalore",
-      rating: 5,
-      text: "I honestly wouldn't have made it to NLSIU without sir's guidance. He always knew exactly when to push scores, when to motivate, and when to keep things simple. Learning from him never felt stressful — something not normal in CLAT preparation — and I'm really grateful for everything he did for me.",
-    },
-    {
-      avatar: "https://i.pravatar.cc/64?img=15",
-      name: "Naman Devpura",
-      role: "CLAT Aspirant",
-      rating: 5,
-      text: "Bhavtosh Agrawal played a formative role in helping me crack CLAT, guiding me to devise an effective strategy to capitalise on my strengths and address my weaknesses. Beyond just covering the syllabus, he instilled a sense of calm and clarity whenever the pressure felt overwhelming. I still reach out to him, and his words continue to anchor me in my most challenging moments. He taught me early on that true progress requires discipline and the character not to be led astray by shortcuts.",
-    },
-    {
-      avatar: "https://i.pravatar.cc/64?img=44",
-      name: "TLP Student",
-      role: "CLAT Aspirant",
-      rating: 5,
-      text: "I started my CLAT preparation from absolute scratch and knew very little when I joined. Bhavtosh Agrawal was leading the faculty there, and the guidance and support I received from him had a significant impact on my preparation. Beyond academics, Sir was always there whenever I needed guidance outside the classroom, and his encouragement helped me stay focused. The mocks, feedback, and constant guidance made the journey much less overwhelming. I'm genuinely grateful for everything I learned from him and for the role he played in my journey.",
-    },
-    {
-      avatar: "https://i.pravatar.cc/64?img=20",
-      name: "TLP Student",
-      role: "Student at NLSIU Bangalore",
-      rating: 5,
-      text: "I honestly wouldn't have made it to NLSIU without sir's guidance. He always knew exactly when to push scores, when to motivate, and when to keep things simple. Learning from him never felt stressful — something not normal in CLAT preparation — and I'm really grateful for everything he did for me.",
-    },
-    {
-      avatar: "https://i.pravatar.cc/64?img=15",
-      name: "Naman Devpura",
-      role: "CLAT Aspirant",
-      rating: 5,
-      text: "Bhavtosh Agrawal played a formative role in helping me crack CLAT, guiding me to devise an effective strategy to capitalise on my strengths and address my weaknesses. Beyond just covering the syllabus, he instilled a sense of calm and clarity whenever the pressure felt overwhelming. I still reach out to him, and his words continue to anchor me in my most challenging moments. He taught me early on that true progress requires discipline and the character not to be led astray by shortcuts.",
-    },
-  ];
-
-  const col2: Card[] = [
-    {
-      avatar: "https://i.pravatar.cc/64?img=49",
-      name: "TLP Student",
-      role: "NLU Graduate | Legal Professional",
-      rating: 5,
-      text: "When I first began my CLAT preparation, the sheer volume of legal concepts felt completely daunting. That entirely changed once Bhavtosh Agrawal started teaching us. He possesses a rare gift for translating complex legal methods into engaging stories and practical, out-of-the-box scenarios. His classes were always fun and vibrant. He built my conceptual clarity so thoroughly that tackling CLAT almost felt like a game. What sets him apart is his genuine investment in his students — he is a mentor and an older brother figure who truly wants to see you succeed. The foundation he built gave me the critical reasoning skills I relied on throughout university and into my professional career.",
-    },
-    {
-      avatar: "https://i.pravatar.cc/64?img=29",
-      name: "Akanksha",
-      role: "3rd Year, NALSAR | AIR 121, CLAT",
-      rating: 5,
-      text: "I am Akanksha, a third year student at NALSAR, one of the best law colleges in India. I secured AIR 121 in my CLAT exam but I had never dreamt of securing this when I first started my preparation at ALLEN CLAT coaching where Bhavtosh Agrawal was our legal reasoning faculty. He was one of the major cornerstones throughout my preparation — not just as a professor, but as a mentor. I still remember running to him after every mock paper, anxious and scared, and he always listened calmly. His pep talk before the CLAT exam was the reason I walked into that exam hall and cracked it.",
-    },
-    {
-      avatar: "https://i.pravatar.cc/64?img=49",
-      name: "TLP Student",
-      role: "NLU Graduate | Legal Professional",
-      rating: 5,
-      text: "When I first began my CLAT preparation, the sheer volume of legal concepts felt completely daunting. That entirely changed once Bhavtosh Agrawal started teaching us. He possesses a rare gift for translating complex legal methods into engaging stories and practical, out-of-the-box scenarios. His classes were always fun and vibrant. He built my conceptual clarity so thoroughly that tackling CLAT almost felt like a game. What sets him apart is his genuine investment in his students — he is a mentor and an older brother figure who truly wants to see you succeed. The foundation he built gave me the critical reasoning skills I relied on throughout university and into my professional career.",
-    },
-    {
-      avatar: "https://i.pravatar.cc/64?img=29",
-      name: "Akanksha",
-      role: "3rd Year, NALSAR | AIR 121, CLAT",
-      rating: 5,
-      text: "I am Akanksha, a third year student at NALSAR, one of the best law colleges in India. I secured AIR 121 in my CLAT exam but I had never dreamt of securing this when I first started my preparation at ALLEN CLAT coaching where Bhavtosh Agrawal was our legal reasoning faculty. He was one of the major cornerstones throughout my preparation — not just as a professor, but as a mentor. I still remember running to him after every mock paper, anxious and scared, and he always listened calmly. His pep talk before the CLAT exam was the reason I walked into that exam hall and cracked it.",
-    },
-  ];
-
   return (
-    <section id="testimonials" className="py-12 sm:py-20 bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 md:px-[60px] relative overflow-hidden">
+    <section id="testimonials" className="py-8 sm:py-12 bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 md:px-[60px] relative overflow-hidden">
       <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-primary-600/5 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="max-w-[1200px] mx-auto flex flex-col lg:flex-row gap-10 lg:gap-20 items-start relative z-10">
@@ -1013,38 +972,27 @@ const InstructorSection = () => {
   ];
 
   return (
-    <section id="instructor" className="py-12 sm:py-20 bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8">
+    <section id="instructor" className="py-8 sm:py-12 bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
 
         {/* LEFT — Photo card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="relative h-[400px] sm:h-[480px] lg:h-auto lg:min-h-[560px] rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm"
+          className="relative h-[480px] sm:h-[600px] lg:h-auto lg:min-h-[560px] rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm"
         >
+          {/* Tablet & mobile image */}
           <img
-            src="https://picsum.photos/seed/instructor/600/700"
+            src="https://ysgzglccgrqbxxxhxthe.supabase.co/storage/v1/object/sign/bannerimages/meetyourmentortablet.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wZjU4YTFjNi02NmE1LTRjNWYtYWI0MS0yN2QxNjhmM2NkMDgiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJiYW5uZXJpbWFnZXMvbWVldHlvdXJtZW50b3J0YWJsZXQucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4NjM2OTg5NiwiZXhwIjoxODE3OTA1ODk2fQ.q0dIIMllLdbUmTzkP9HEpO6-SoSn2hgX07spbzkRGzM"
             alt="Bhavtosh Agrawal"
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-cover object-center block lg:hidden"
           />
-          {/* Bottom name overlay */}
-          <div className="absolute bottom-4 left-4 right-4 bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex items-center justify-between shadow-lg">
-            <div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-white leading-tight">Bhavtosh Agrawal</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Founder & Chief Mentor, The Law Project</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <a href="#" className="w-9 h-9 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">
-                <Instagram className="w-4 h-4 text-pink-500" />
-              </a>
-              <a href="#" className="w-9 h-9 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">
-                <Youtube className="w-4 h-4 text-red-500" />
-              </a>
-              <a href="#" className="w-9 h-9 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">
-                <Linkedin className="w-4 h-4 text-blue-600" />
-              </a>
-            </div>
-          </div>
+          {/* Desktop image */}
+          <img
+            src="https://ysgzglccgrqbxxxhxthe.supabase.co/storage/v1/object/sign/bannerimages/meetyourmentordesktop.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wZjU4YTFjNi02NmE1LTRjNWYtYWI0MS0yN2QxNjhmM2NkMDgiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJiYW5uZXJpbWFnZXMvbWVldHlvdXJtZW50b3JkZXNrdG9wLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODYzNjg5OTEsImV4cCI6MTgxNzkwNDk5MX0.M3-M7ANJuVyD1_6c_an1Hjz2Vu4A9x8LfRGoULohxyQ"
+            alt="Bhavtosh Agrawal"
+            className="w-full h-full object-cover object-center hidden lg:block"
+          />
         </motion.div>
 
         {/* RIGHT — Content card */}
@@ -1148,7 +1096,7 @@ const BlogSection = () => {
   const recent = posts.slice(1, 4);
 
   return (
-    <section className="py-12 sm:py-20 bg-white dark:bg-gray-900">
+    <section className="py-8 sm:py-12 bg-white dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
@@ -1284,7 +1232,7 @@ const FAQ2 = () => {
       title: "Support & Refunds",
       subtext: "Our commitment to your success — from mentor access and doubt resolution to our refund guarantee.",
       faqs: [
-        { id: 11, q: "What support is available if I have doubts?", a: "You can post questions in the community forum, attend live doubt-clearing sessions, or reach out to mentors directly via the platform's messaging feature." },
+        { id: 11, q: "What support is available if I have doubts?", a: "You can post questions in the community forum, attend doubt-solving sessions, or reach out to mentors directly via the platform's messaging feature." },
         { id: 12, q: "Is there a refund policy?", a: "Yes. We offer a 30-day money-back guarantee. If you're not satisfied within the first 30 days, contact us and we'll process a full refund — no questions asked." },
         { id: 13, q: "Can I interact with the mentor directly?", a: "Absolutely. In addition to live group sessions, select plans include one-on-one mentor calls where you can get personalised feedback on your progress and career goals." },
         { id: 14, q: "How do I enroll?", a: "Click the 'Enroll now' button, choose your plan, and complete checkout. You'll get instant access to the platform and an onboarding email within minutes." },

@@ -83,6 +83,29 @@ export default function CourseLearning({
   const [settingsView, setSettingsView] = useState<"main" | "speed" | "quality">("main");
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
+  const [ytStarted, setYtStarted] = useState(false); // tracks if YT video has been played at least once
+  // YouTube shows its own branded title/share/watch-later overlay (with logo) for a few
+  // seconds the first time a video starts — unremovable via player params. We keep our
+  // own opaque cover up for a moment after first play to hide it.
+  const [ytBrandingGuard, setYtBrandingGuard] = useState(false);
+  const ytBrandingGuardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [captionsOn, setCaptionsOn] = useState(false);
+  const captionsOnRef = useRef(false); // mirrors captionsOn for use inside stable player-event closures
+  // Fetched on-demand from /api/lesson-video — never stored in the course prop
+  const [fetchedVideoUrl, setFetchedVideoUrl] = useState<string | null>(null);
+  const [fetchedQualities, setFetchedQualities] = useState<Record<string, string> | null>(null);
+
+  // YouTube IFrame API refs
+  interface YTPlayer {
+    playVideo(): void; pauseVideo(): void;
+    seekTo(s: number, allowSeekAhead: boolean): void;
+    getCurrentTime(): number; getDuration(): number;
+    mute(): void; unMute(): void; isMuted(): boolean;
+    setPlaybackRate(r: number): void; destroy(): void;
+  }
+  const ytRef = useRef<YTPlayer | null>(null);
+  const ytDivRef = useRef<HTMLDivElement>(null);
+  const ytTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -205,10 +228,177 @@ export default function CourseLearning({
     });
 
   // Resolve active video source — supports multi-part lessons
+  // Parts array is kept (labels only, no URLs) to render part-tab buttons
   const activeParts = current?.item?.parts?.length ? current.item.parts : null;
-  const activePart = activeParts ? (activeParts[currentPart] ?? activeParts[0]) : null;
-  const activeVideoUrl = activePart?.video_url || current?.item?.video_url || null;
-  const activeQualities = activePart?.video_qualities ?? current?.item?.video_qualities ?? null;
+
+  const [videoFetching, setVideoFetching] = useState(false);
+
+  // Fetch the actual video URL securely from the server on each lesson/part change.
+  // Fetch for ALL lessons regardless of content_type — if the DB has a video URL for
+  // a lesson marked "reading", it should still play (admin may have added URL later).
+  useEffect(() => {
+    if (!current) {
+      setFetchedVideoUrl(null);
+      setFetchedQualities(null);
+      setVideoFetching(false);
+      return;
+    }
+    setFetchedVideoUrl(null);
+    setFetchedQualities(null);
+    setVideoFetching(true);
+    const params = new URLSearchParams({
+      courseSlug: course.slug,
+      moduleIndex: String(current.moduleIndex),
+      lessonIndex: String(current.lessonIndex),
+      partIndex: String(currentPart),
+    });
+    fetch(`/api/lesson-video?${params}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        setFetchedVideoUrl(data?.video_url ?? null);
+        setFetchedQualities(data?.video_qualities ?? null);
+        setVideoFetching(false);
+      })
+      .catch(() => { setVideoFetching(false); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.moduleIndex, current?.lessonIndex, currentPart]);
+
+  const activeVideoUrl = fetchedVideoUrl;
+  const activeQualities = fetchedQualities;
+
+  // Detect YouTube links and build embed URL
+  function getYouTubeEmbedUrl(url: string): string | null {
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+    return m ? `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1` : null;
+  }
+  const isYouTube = !!activeVideoUrl && /youtube\.com|youtu\.be/.test(activeVideoUrl);
+  const youtubeEmbedUrl = isYouTube && activeVideoUrl ? getYouTubeEmbedUrl(activeVideoUrl) : null;
+
+  // Load the YouTube IFrame API script once
+  useEffect(() => {
+    if (typeof window === "undefined" || (window as any).YT?.Player) return;
+    if (document.querySelector('script[src*="youtube.com/iframe_api"]')) return;
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+  }, []);
+
+  // Initialize / destroy YT.Player whenever the active video changes to/from YouTube
+  useEffect(() => {
+    if (!isYouTube || !ytDivRef.current) return;
+    const videoId = activeVideoUrl?.match(
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
+    )?.[1];
+    if (!videoId) return;
+
+    setYtStarted(false); // reset on every new video
+    setYtBrandingGuard(false);
+    if (ytBrandingGuardTimerRef.current) { clearTimeout(ytBrandingGuardTimerRef.current); ytBrandingGuardTimerRef.current = null; }
+    let hasStartedOnce = false;
+    captionsOnRef.current = false;
+    setCaptionsOn(false);
+
+    const container = ytDivRef.current;
+    let player: YTPlayer | null = null;
+
+    const init = () => {
+      if (!container) return;
+      // Always start with a fresh mount element (YT replaces the element it receives)
+      container.innerHTML = "";
+      const mountEl = document.createElement("div");
+      mountEl.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;";
+      container.appendChild(mountEl);
+
+      player = new (window as any).YT.Player(mountEl, {
+        videoId,
+        playerVars: {
+          controls: 0, rel: 0, modestbranding: 1,
+          iv_load_policy: 3, showinfo: 0, disablekb: 1,
+          fs: 0, playsinline: 1, cc_load_policy: 0,
+          origin: typeof window !== "undefined" ? window.location.origin : "",
+        },
+        events: {
+          onReady: (e: any) => {
+            ytRef.current = e.target as YTPlayer;
+            // Fill container and disable pointer events so hover never triggers YouTube UI
+            const iframe = e.target.getIframe?.() as HTMLIFrameElement | undefined;
+            if (iframe) {
+              iframe.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;border:0;pointer-events:none;";
+            }
+            // cc_load_policy:0 can still be overridden by a viewer's browser/OS-level
+            // "always show captions" preference — force them off explicitly too.
+            try { e.target.unloadModule?.("captions"); } catch { /* ignore */ }
+            const d = e.target.getDuration?.() || 0;
+            if (d > 0) setDuration(d);
+          },
+          // The captions module can finish loading asynchronously (after onReady) and
+          // silently re-enable a track from the viewer's saved YouTube preference.
+          // Force it off every time modules change, unless the user turned it on via our toggle.
+          onApiChange: (e: any) => {
+            if (!captionsOnRef.current) {
+              try { e.target.setOption?.("captions", "track", {}); } catch { /* ignore */ }
+            }
+          },
+          onStateChange: (e: any) => {
+            const S = { PLAYING: 1, PAUSED: 2, ENDED: 0 };
+            if (e.data === S.PLAYING) {
+              setIsPlaying(true);
+              setYtStarted(true);
+              if (!hasStartedOnce) {
+                hasStartedOnce = true;
+                setYtBrandingGuard(true);
+                if (ytBrandingGuardTimerRef.current) clearTimeout(ytBrandingGuardTimerRef.current);
+                ytBrandingGuardTimerRef.current = setTimeout(() => setYtBrandingGuard(false), 3500);
+              }
+              if (ytTimerRef.current) clearInterval(ytTimerRef.current);
+              ytTimerRef.current = setInterval(() => {
+                if (!ytRef.current) return;
+                setCurrentTime(ytRef.current.getCurrentTime?.() || 0);
+                const d = ytRef.current.getDuration?.() || 0;
+                if (d > 0) setDuration(d);
+              }, 250);
+            } else {
+              setIsPlaying(false);
+              if (ytTimerRef.current) { clearInterval(ytTimerRef.current); ytTimerRef.current = null; }
+              if (e.data === S.PAUSED || e.data === S.ENDED) {
+                setCurrentTime(ytRef.current?.getCurrentTime?.() || 0);
+              }
+            }
+          },
+        },
+      });
+    };
+
+    if ((window as any).YT?.Player) { init(); }
+    else { (window as any).onYouTubeIframeAPIReady = init; }
+
+    return () => {
+      if (ytTimerRef.current) { clearInterval(ytTimerRef.current); ytTimerRef.current = null; }
+      if (ytBrandingGuardTimerRef.current) { clearTimeout(ytBrandingGuardTimerRef.current); ytBrandingGuardTimerRef.current = null; }
+      ytRef.current = null;
+      try { player?.destroy(); } catch { /* ignore */ }
+      player = null;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isYouTube, activeVideoUrl]);
+
+  const toggleYtCaptions = () => {
+    const p = ytRef.current as any;
+    if (!p) return;
+    const next = !captionsOnRef.current;
+    captionsOnRef.current = next;
+    setCaptionsOn(next);
+    try {
+      if (next) {
+        p.loadModule?.("captions");
+        const list = p.getOption?.("captions", "tracklist") || [];
+        p.setOption?.("captions", "track", list[0] || { languageCode: "hi" });
+      } else {
+        p.setOption?.("captions", "track", {});
+        p.unloadModule?.("captions");
+      }
+    } catch { /* ignore */ }
+  };
 
   // Build sorted quality options: [["360p", "url"], ["720p", "url"], ...]
   // Guard against malformed JSONB values (e.g. a plain string instead of an object)
@@ -334,17 +524,13 @@ export default function CourseLearning({
                           }`}>
                             {lesson.item.title}
                           </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] text-gray-400 capitalize">{lesson.type}</span>
-                            {lesson.item.duration && (
-                              <>
-                                <span className="text-[10px] text-gray-300">·</span>
-                                <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
-                                  <Clock className="w-2.5 h-2.5" /> {lesson.item.duration}
-                                </span>
-                              </>
-                            )}
-                          </div>
+                          {lesson.item.duration && (
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
+                                <Clock className="w-2.5 h-2.5" /> {lesson.item.duration}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </button>
                     );
@@ -380,10 +566,159 @@ export default function CourseLearning({
 
             {/* Video player or placeholder */}
             {activeVideoUrl ? (
+              youtubeEmbedUrl ? (
+                /* ── YouTube custom player (IFrame API, controls=0) ── */
+                <div
+                  ref={videoContainerRef}
+                  className="tlp-video-wrapper rounded-2xl overflow-hidden bg-black mb-5 w-full relative group/player"
+                  onContextMenu={(e) => e.preventDefault()}
+                >
+                  {/* padding-bottom trick gives reliable 16:9 height; opacity hides YT UI when not playing */}
+                  <div
+                    ref={ytDivRef}
+                    className="w-full"
+                    style={isFullscreen
+                      ? { width: "100vw", height: "100vh", opacity: isPlaying && !ytBrandingGuard ? 1 : 0, transition: "opacity 0.15s" }
+                      : { position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", opacity: isPlaying && !ytBrandingGuard ? 1 : 0, transition: "opacity 0.15s" }
+                    }
+                  />
+
+                  {/* Before first play: solid black so YouTube thumbnail+branding are invisible */}
+                  {!isPlaying && !ytStarted && (
+                    <div
+                      className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                      style={{ background: "#000", zIndex: 15 }}
+                      onClick={() => ytRef.current?.playVideo()}
+                    >
+                      <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/50 hover:bg-white/30 transition-colors">
+                        <Play className="w-6 h-6 text-white fill-white ml-0.5" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* After first play, when paused: light dim so user sees the paused frame */}
+                  {!isPlaying && ytStarted && (
+                    <div
+                      className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                      style={{ background: "rgba(0,0,0,0.35)", zIndex: 15 }}
+                      onClick={() => ytRef.current?.playVideo()}
+                    >
+                      <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/50 hover:bg-white/30 transition-colors">
+                        <Play className="w-6 h-6 text-white fill-white ml-0.5" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Click-to-pause during playback (iframe has pointer-events:none so we need this) */}
+                  {isPlaying && (
+                    <div
+                      className="absolute inset-0 cursor-pointer"
+                      style={{ bottom: "52px", zIndex: 5 }}
+                      onClick={() => ytRef.current?.pauseVideo()}
+                    />
+                  )}
+
+                  {/* Dynamic watermark */}
+                  {/* Watermark — only shown during playback, not on the black pause screen */}
+                  {isPlaying && (
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        position: "absolute",
+                        top: `${wmPos.top}%`,
+                        left: `${wmPos.left}%`,
+                        opacity: 0.45,
+                        pointerEvents: "none",
+                        userSelect: "none",
+                        transition: "top 1.2s ease, left 1.2s ease",
+                        zIndex: 10,
+                        whiteSpace: "nowrap",
+                        color: "#ff0000",
+                      }}
+                      className="text-sm font-semibold"
+                    >
+                      The Law Project
+                    </div>
+                  )}
+
+                  {/* Settings panel — speed only for YouTube */}
+                  {settingsOpen && (
+                    <div
+                      ref={settingsPanelRef}
+                      className="absolute bottom-14 right-2 z-30 bg-gray-900/95 backdrop-blur-sm rounded-xl overflow-hidden min-w-[220px] shadow-xl text-white"
+                    >
+                      {settingsView === "main" && (
+                        <>
+                          <button onClick={toggleYtCaptions} className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/10">
+                            <span className="text-xs text-gray-400 font-medium">Captions</span>
+                            <span className={`text-xs font-medium ${captionsOn ? "text-white" : "text-gray-500"}`}>{captionsOn ? "On" : "Off"}</span>
+                          </button>
+                          <button onClick={() => setSettingsView("speed")} className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/10 transition-colors">
+                            <span className="text-xs text-gray-400 font-medium">Speed</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-white">{playbackSpeed === 1 ? "Normal" : `${playbackSpeed}×`}</span>
+                              <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                            </div>
+                          </button>
+                        </>
+                      )}
+                      {settingsView === "speed" && (
+                        <>
+                          <button onClick={() => setSettingsView("main")} className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/10 transition-colors border-b border-white/10">
+                            <ChevronLeft className="w-4 h-4 text-gray-400" /><span className="text-sm font-medium">Speed</span>
+                          </button>
+                          {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((s) => (
+                            <button key={s} onClick={() => {
+                              setPlaybackSpeed(s);
+                              ytRef.current?.setPlaybackRate(s);
+                              setSettingsOpen(false);
+                            }} className="w-full flex items-center gap-3 px-4 py-1.5 hover:bg-white/10 transition-colors">
+                              <Check className={`w-3.5 h-3.5 flex-shrink-0 ${playbackSpeed === s ? "text-white" : "text-transparent"}`} />
+                              <span className={`text-sm ${playbackSpeed === s ? "text-white font-medium" : "text-gray-300"}`}>{s === 1 ? "Normal" : `${s}×`}</span>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Custom controls bar — thin mobile, half tablet, full desktop; always full in fullscreen */}
+                  <div className={`absolute bottom-0 left-0 right-0 z-20 px-2 sm:px-3 bg-gradient-to-t from-black/90 via-black/60 to-transparent ${isFullscreen ? "pt-8 pb-2" : "pt-2 pb-1 md:pt-2 md:pb-1 lg:pt-8 lg:pb-2"}`}>
+                    <input
+                      type="range" min={0} max={duration || 100} step={0.1} value={currentTime}
+                      onChange={(e) => { const t = Number(e.target.value); ytRef.current?.seekTo(t, true); setCurrentTime(t); }}
+                      className="w-full h-0.5 mb-1 sm:h-1 sm:mb-2 cursor-pointer accent-primary-500"
+                    />
+                    <div className="flex items-center gap-0.5 sm:gap-1">
+                      <button onClick={() => { if (isPlaying) ytRef.current?.pauseVideo(); else ytRef.current?.playVideo(); }}
+                        className="w-5 h-5 sm:w-8 sm:h-8 flex items-center justify-center text-white hover:text-gray-300 transition-colors">
+                        {isPlaying ? <Pause className="w-3 h-3 sm:w-4 sm:h-4 fill-white" /> : <Play className="w-3 h-3 sm:w-4 sm:h-4 fill-white ml-0.5" />}
+                      </button>
+                      <span className="text-[9px] sm:text-[11px] text-white/80 font-mono select-none whitespace-nowrap px-1">
+                        {formatTime(currentTime)} / {formatTime(duration)}
+                      </span>
+                      <div className="flex-1" />
+                      <button onClick={() => { if (isMuted) { ytRef.current?.unMute(); setIsMuted(false); } else { ytRef.current?.mute(); setIsMuted(true); } }}
+                        className="w-5 h-5 sm:w-8 sm:h-8 flex items-center justify-center text-white hover:text-gray-300 transition-colors">
+                        {isMuted ? <VolumeX className="w-3 h-3 sm:w-4 sm:h-4" /> : <Volume2 className="w-3 h-3 sm:w-4 sm:h-4" />}
+                      </button>
+                      <button ref={settingsBtnRef} onClick={() => { setSettingsOpen((v) => !v); setSettingsView("main"); }}
+                        className="w-5 h-5 sm:w-8 sm:h-8 flex items-center justify-center text-white hover:text-gray-300 transition-colors">
+                        <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </button>
+                      <button onClick={() => { const el = videoContainerRef.current as HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> }; if (!el) return; if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else (el.requestFullscreen?.() ?? el.webkitRequestFullscreen?.())?.catch(() => {}); }}
+                        className="w-5 h-5 sm:w-8 sm:h-8 flex items-center justify-center text-white hover:text-gray-300 transition-colors">
+                        {isFullscreen ? <Minimize2 className="w-3 h-3 sm:w-4 sm:h-4" /> : <Maximize2 className="w-3 h-3 sm:w-4 sm:h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
               /* ── Real HTML5 video — custom controls ── */
               <div
                 ref={videoContainerRef}
                 className="tlp-video-wrapper rounded-2xl overflow-hidden bg-black mb-5 w-full relative group/player"
+                onContextMenu={(e) => e.preventDefault()}
               >
                 <video
                   ref={videoRef}
@@ -428,7 +763,7 @@ export default function CourseLearning({
                   }}
                   className="text-sm font-semibold"
                 >
-                  {candidateName || "The Law Project"}
+                  The Law Project
                 </div>
 
                 {/* Settings panel — anchored above controls bar, inside container */}
@@ -571,8 +906,12 @@ export default function CourseLearning({
                   </div>
                 </div>
               </div>
+              )
+            ) : videoFetching ? (
+              /* ── Loading: plain black screen while API fetch is in-flight ── */
+              <div className="rounded-2xl overflow-hidden bg-black mb-5 relative aspect-video" />
             ) : (
-              /* ── Placeholder (no video_url yet) ── */
+              /* ── Placeholder (confirmed no video_url) ── */
               <div className="rounded-2xl overflow-hidden bg-gray-950 mb-5 relative aspect-video">
                 <img src={thumb} alt={current.item.title}
                   className="w-full h-full object-cover opacity-70" />
@@ -625,7 +964,7 @@ export default function CourseLearning({
                     }}
                     className="text-red-500 text-sm font-semibold"
                   >
-                    {candidateName || "The Law Project"}
+                    The Law Project
                   </div>
                 )}
               </div>
@@ -828,17 +1167,13 @@ export default function CourseLearning({
                               }`}>
                                 {lesson.item.title}
                               </p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] text-gray-400 capitalize">{lesson.type}</span>
-                                {lesson.item.duration && (
-                                  <>
-                                    <span className="text-[10px] text-gray-300">·</span>
-                                    <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
-                                      <Clock className="w-2.5 h-2.5" /> {lesson.item.duration}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
+                              {lesson.item.duration && (
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
+                                    <Clock className="w-2.5 h-2.5" /> {lesson.item.duration}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </button>
                         );

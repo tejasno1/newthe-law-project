@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { Clock, Calendar, Award, ChevronRight, Star } from "lucide-react";
-import { PROGRAMMES } from "@/lib/programmes";
+import { getAllProgrammes } from "@/lib/programmes";
 
-export default function SkillProgrammeGrid() {
+export default async function SkillProgrammeGrid() {
+  const programmes = await getAllProgrammes();
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {PROGRAMMES.map((prog, i) => (
+        {programmes.map((prog, i) => (
           <div
             key={prog.slug}
             style={{ animation: `tlpSlideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) ${i * 0.08}s both` }}
@@ -81,7 +83,7 @@ export default function SkillProgrammeGrid() {
         ))}
       </div>
 
-      {PROGRAMMES.length === 0 && (
+      {programmes.length === 0 && (
         <p className="text-center text-gray-400 py-20">No programmes available yet. Check back soon.</p>
       )}
     </>

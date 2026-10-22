@@ -79,6 +79,16 @@ export type CourseUpdateData = {
   outcomes?: string[];
   ideal_for?: string[];
   faqs?: CourseFAQ[];
+  requires_tnc?: boolean;
+  tnc_content?: string | null;
+  is_coming_soon?: boolean;
+  start_date?: string | null;
+  offer_valid_till?: string | null;
+  show_offer_validity?: boolean;
+  enrollment_email?: string | null;
+  demo_video_url?: string | null;
+  demo_video_url_2?: string | null;
+  demo_video_url_3?: string | null;
 };
 
 export async function updateCourse(
@@ -93,6 +103,16 @@ export async function updateCourse(
   if (error) return { error: error.message };
 
   revalidatePath(`/course/${slug}`);
+  revalidatePath("/course");
+  revalidatePath("/");
+  return {};
+}
+
+export async function deleteCourse(slug: string): Promise<{ error?: string }> {
+  const { error } = await supabaseAdmin.from("courses").delete().eq("slug", slug);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/courses");
   revalidatePath("/course");
   revalidatePath("/");
   return {};
@@ -514,6 +534,7 @@ export type MockTestUpdateData = {
   is_free?: boolean;
   price?: number;
   test_type?: "normal" | "passage_based";
+  enrollment_email?: string | null;
 };
 
 // Shape for questions coming from Excel upload
@@ -787,12 +808,35 @@ export async function deleteResourceCategory(id: number) {
   return {};
 }
 
+// ── Exam Categories ────────────────────────────────────────────────────────────
+
+export async function createExamCategory(name: string) {
+  const { data, error } = await supabaseAdmin
+    .from("exam_categories")
+    .insert({ name, sort_order: 0 })
+    .select("id, name, sort_order")
+    .single();
+  if (error) return { error: error.message };
+  revalidatePath("/admin/resources");
+  revalidatePath("/resources");
+  return { category: data };
+}
+
+export async function deleteExamCategory(id: number) {
+  const { error } = await supabaseAdmin.from("exam_categories").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/resources");
+  revalidatePath("/resources");
+  return {};
+}
+
 // ── Resources ──────────────────────────────────────────────────────────────────
 
 export interface ResourceFormData {
   title: string;
   description?: string;
   categoryId?: number | null;
+  examCategory?: string | null;
   filePath?: string | null;
   pages?: number | null;
   sizeLabel?: string | null;
@@ -824,6 +868,7 @@ export async function createResource(data: ResourceFormData) {
       title: data.title,
       description: data.description ?? null,
       category_id: data.categoryId ?? null,
+      exam_category: data.examCategory ?? null,
       file_path: data.filePath ?? null,
       pages: data.pages ?? null,
       size_label: data.sizeLabel ?? null,
@@ -846,6 +891,7 @@ export async function updateResource(id: number, data: ResourceFormData) {
       title: data.title,
       description: data.description ?? null,
       category_id: data.categoryId ?? null,
+      exam_category: data.examCategory ?? null,
       file_path: data.filePath ?? null,
       pages: data.pages ?? null,
       size_label: data.sizeLabel ?? null,
@@ -880,4 +926,359 @@ export async function toggleResourcePublished(id: number, published: boolean) {
   revalidatePath("/admin/resources");
   revalidatePath("/resources");
   return {};
+}
+
+// ── Question Bank ─────────────────────────────────────────────────────────────
+
+export async function createQuestionBankCategory(name: string) {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const { data, error } = await supabaseAdmin
+    .from("question_bank_categories")
+    .insert({ name, slug })
+    .select("id, name, slug, sort_order")
+    .single();
+  if (error) return { error: error.message };
+  revalidatePath("/admin/question-bank");
+  revalidatePath("/question-bank");
+  return { category: data };
+}
+
+export async function deleteQuestionBankCategory(id: number) {
+  const { error } = await supabaseAdmin.from("question_bank_categories").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/question-bank");
+  revalidatePath("/question-bank");
+  return {};
+}
+
+export interface QuestionBankFormData {
+  title: string;
+  description?: string;
+  subject?: string | null;
+  examCategory?: string | null;
+  filePath?: string | null;
+  isFree?: boolean;
+  price?: number;
+  isPublished?: boolean;
+  sortOrder?: number;
+}
+
+function questionBankPricing(data: QuestionBankFormData): { is_free: boolean; price: number } | { error: string } {
+  const isFree = data.isFree ?? true;
+  const price = isFree ? 0 : Number(data.price ?? 0);
+  if (!isFree && (!Number.isFinite(price) || price <= 0)) return { error: "Enter a price above ₹0 for a paid question set." };
+  return { is_free: isFree, price };
+}
+
+export async function uploadQuestionBankFile(formData: FormData) {
+  const file = formData.get("file") as File | null;
+  if (!file) return { error: "No file provided" };
+
+  const ext = file.name.split(".").pop() ?? "pdf";
+  const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  const { error } = await supabaseAdmin.storage
+    .from("question-bank")
+    .upload(path, buffer, { contentType: file.type, upsert: false });
+
+  if (error) return { error: error.message };
+  return { path };
+}
+
+export async function createQuestionBankItem(data: QuestionBankFormData) {
+  const pricing = questionBankPricing(data);
+  if ("error" in pricing) return { error: pricing.error };
+  const { error, data: row } = await supabaseAdmin
+    .from("question_bank")
+    .insert({
+      title: data.title,
+      description: data.description ?? null,
+      subject: data.subject ?? null,
+      exam_category: data.examCategory ?? null,
+      file_path: data.filePath ?? null,
+      ...pricing,
+      is_published: data.isPublished ?? true,
+      sort_order: data.sortOrder ?? 0,
+    })
+    .select("id")
+    .single();
+  if (error) return { error: error.message };
+  revalidatePath("/admin/question-bank");
+  revalidatePath("/question-bank");
+  return { id: (row as { id: number }).id };
+}
+
+export async function updateQuestionBankItem(id: number, data: QuestionBankFormData) {
+  const pricing = questionBankPricing(data);
+  if ("error" in pricing) return { error: pricing.error };
+  const { error } = await supabaseAdmin
+    .from("question_bank")
+    .update({
+      title: data.title,
+      description: data.description ?? null,
+      subject: data.subject ?? null,
+      exam_category: data.examCategory ?? null,
+      file_path: data.filePath ?? null,
+      ...pricing,
+      is_published: data.isPublished ?? true,
+      sort_order: data.sortOrder ?? 0,
+    })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/question-bank");
+  revalidatePath("/question-bank");
+  return {};
+}
+
+export async function deleteQuestionBankItem(id: number, filePath?: string | null) {
+  if (filePath) {
+    await supabaseAdmin.storage.from("question-bank").remove([filePath]);
+  }
+  const { error } = await supabaseAdmin.from("question_bank").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/question-bank");
+  revalidatePath("/question-bank");
+  return {};
+}
+
+export async function toggleQuestionBankPublished(id: number, published: boolean) {
+  const { error } = await supabaseAdmin
+    .from("question_bank")
+    .update({ is_published: published })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/question-bank");
+  revalidatePath("/question-bank");
+  return {};
+}
+
+// ── Testimonials ────────────────────────────────────────────────────────────────
+
+export async function uploadTestimonialAvatar(formData: FormData) {
+  const file = formData.get("file") as File | null;
+  if (!file || file.size === 0) return { error: "No file selected." };
+
+  const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  if (!allowed.includes(file.type)) return { error: "Only JPG, PNG, WEBP, or GIF allowed." };
+
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const path = `testimonials/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const arrayBuffer = await file.arrayBuffer();
+
+  const { error } = await supabaseAdmin.storage
+    .from("course-images")
+    .upload(path, arrayBuffer, { contentType: file.type, upsert: true });
+
+  if (error) return { error: error.message };
+
+  const { data: urlData } = supabaseAdmin.storage.from("course-images").getPublicUrl(path);
+  return { url: urlData.publicUrl };
+}
+
+export interface TestimonialFormData {
+  name: string;
+  role: string;
+  avatarUrl?: string | null;
+  rating?: number;
+  body: string;
+  isPublished?: boolean;
+  sortOrder?: number;
+}
+
+export async function createTestimonial(data: TestimonialFormData) {
+  const { error, data: row } = await supabaseAdmin
+    .from("testimonials")
+    .insert({
+      name: data.name,
+      role: data.role,
+      avatar_url: data.avatarUrl ?? null,
+      rating: data.rating ?? 5,
+      body: data.body,
+      is_published: data.isPublished ?? true,
+      sort_order: data.sortOrder ?? 0,
+    })
+    .select("id")
+    .single();
+  if (error) return { error: error.message };
+  revalidatePath("/admin/testimonials");
+  revalidatePath("/");
+  return { id: (row as { id: number }).id };
+}
+
+export async function updateTestimonial(id: number, data: TestimonialFormData) {
+  const { error } = await supabaseAdmin
+    .from("testimonials")
+    .update({
+      name: data.name,
+      role: data.role,
+      avatar_url: data.avatarUrl ?? null,
+      rating: data.rating ?? 5,
+      body: data.body,
+      is_published: data.isPublished ?? true,
+      sort_order: data.sortOrder ?? 0,
+    })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/testimonials");
+  revalidatePath("/");
+  return {};
+}
+
+export async function deleteTestimonial(id: number) {
+  const { error } = await supabaseAdmin.from("testimonials").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/testimonials");
+  revalidatePath("/");
+  return {};
+}
+
+export async function toggleTestimonialPublished(id: number, published: boolean) {
+  const { error } = await supabaseAdmin
+    .from("testimonials")
+    .update({ is_published: published })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/testimonials");
+  revalidatePath("/");
+  return {};
+}
+
+// ── QuickSkills / Programmes ──────────────────────────────────────────────────
+
+export type ProgrammeUpdateData = {
+  title?: string;
+  short_title?: string;
+  tagline?: string;
+  badge?: string;
+  is_new?: boolean;
+  category?: string;
+  duration?: string;
+  hours_per_week?: string;
+  price?: number;
+  enrollment?: string;
+  cover_img?: string;
+  description?: string;
+  highlights?: string[];
+  who_for?: { label: string; desc: string }[];
+  learnings?: string[];
+  methodology?: { title: string; desc: string }[];
+  objectives_groups?: { title: string; items: string[] }[];
+  syllabus?: { title: string; items: string[] }[];
+  faculty?: { name: string; role: string; bio: string; img: string }[];
+  features?: string[];
+  faqs?: { q: string; a: string }[];
+  is_coming_soon?: boolean;
+  enrollment_email?: string | null;
+};
+
+export async function createProgramme(
+  _prevState: string | null,
+  formData: FormData
+): Promise<string | null> {
+  const title = (formData.get("title") as string)?.trim();
+  const customSlug = (formData.get("slug") as string)?.trim();
+
+  if (!title) return "Title is required.";
+
+  const slug = customSlug ? slugify(customSlug) : slugify(title);
+  if (!slug) return "Could not generate a valid slug.";
+
+  const { data: existing } = await supabaseAdmin
+    .from("programmes")
+    .select("slug")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (existing) return `A programme with slug "${slug}" already exists.`;
+
+  const { error } = await supabaseAdmin.from("programmes").insert({
+    slug,
+    title,
+    short_title: "",
+    tagline: "",
+    badge: "Certificate Programme",
+    is_new: false,
+    category: "",
+    duration: "",
+    hours_per_week: "",
+    price: 0,
+    enrollment: "closed",
+    cover_img: "",
+    description: "",
+    highlights: [],
+    who_for: [],
+    learnings: [],
+    methodology: [],
+    objectives_groups: [],
+    syllabus: [],
+    faculty: [],
+    features: [],
+    faqs: [],
+  });
+
+  if (error) return error.message;
+
+  revalidatePath("/admin/quick-skills");
+  redirect(`/admin/quick-skills/${slug}`);
+}
+
+export async function updateProgramme(
+  slug: string,
+  data: ProgrammeUpdateData
+): Promise<{ error?: string }> {
+  const { error } = await supabaseAdmin
+    .from("programmes")
+    .update(data)
+    .eq("slug", slug);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/skill-training/${slug}`);
+  revalidatePath("/skill-training");
+  revalidatePath("/admin/quick-skills");
+  return {};
+}
+
+export async function deleteProgramme(slug: string): Promise<{ error?: string }> {
+  const { error } = await supabaseAdmin.from("programmes").delete().eq("slug", slug);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/quick-skills");
+  revalidatePath("/skill-training");
+  return {};
+}
+
+export async function uploadProgrammeCoverImage(
+  slug: string,
+  formData: FormData
+): Promise<{ url?: string; error?: string }> {
+  const file = formData.get("file") as File | null;
+  if (!file || file.size === 0) return { error: "No file selected." };
+
+  const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  if (!allowed.includes(file.type)) return { error: "Only JPG, PNG, WEBP, or GIF allowed." };
+
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const path = `programme-${slug}-${Date.now()}.${ext}`;
+  const arrayBuffer = await file.arrayBuffer();
+
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from("course-images")
+    .upload(path, arrayBuffer, { contentType: file.type, upsert: true });
+
+  if (uploadError) return { error: uploadError.message };
+
+  const { data } = supabaseAdmin.storage.from("course-images").getPublicUrl(path);
+
+  const { error: dbError } = await supabaseAdmin
+    .from("programmes")
+    .update({ cover_img: data.publicUrl })
+    .eq("slug", slug);
+
+  if (dbError) return { error: dbError.message };
+
+  revalidatePath(`/skill-training/${slug}`);
+  revalidatePath("/skill-training");
+
+  return { url: data.publicUrl };
 }

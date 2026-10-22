@@ -27,10 +27,9 @@ function resolveIcon(name: string): React.ElementType {
 }
 
 const ACCESS_OPTIONS = [
-  { value: "all",               label: "All Plans" },
-  { value: "free",              label: "Free" },
-  { value: "tlp_plus",         label: "TLP Plus" },
-  { value: "one_time_purchase", label: "One Time Purchase" },
+  { value: "all",  label: "All Plans" },
+  { value: "free", label: "Free" },
+  { value: "paid", label: "Paid" },
 ];
 
 
@@ -130,11 +129,23 @@ const CourseHero = ({
     ...unmatched,
   ];
 
-  const filteredCourses = courses.filter((c) => {
-    const catMatch = activeCategory === "All Courses" || c.category === activeCategory;
-    const planMatch = activePlan === "all" || c.accessType === activePlan;
-    return catMatch && planMatch;
-  });
+  // Map category name → its admin-defined position (for sorting in All Courses view)
+  const categoryOrderMap = new Map(
+    orderedCategories.map((cat, i) => [cat.name, i])
+  );
+
+  const filteredCourses = courses
+    .filter((c) => {
+      const catMatch = activeCategory === "All Courses" || c.category === activeCategory;
+      const planMatch = activePlan === "all" || c.accessType === activePlan;
+      return catMatch && planMatch;
+    })
+    .sort((a, b) => {
+      if (activeCategory !== "All Courses") return 0;
+      const aIdx = categoryOrderMap.get(a.category ?? "") ?? 999;
+      const bIdx = categoryOrderMap.get(b.category ?? "") ?? 999;
+      return aIdx - bIdx;
+    });
 
   const activeCatName = activeCategory;
 
@@ -192,14 +203,46 @@ const CourseHero = ({
                       className="w-full h-44 object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                      {course.deliveryType && (
-                        <span className="bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-semibold px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1.5">
-                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${course.deliveryType === "online" ? "bg-green-500" : "bg-gray-400"}`} />
-                          {course.deliveryType === "online" ? "Online" : "Recorded"}
+                      {course.deliveryType === "online" && (
+                        <span className="flex items-center shadow-md overflow-hidden rounded-full">
+                          <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-red-600 flex-shrink-0 -mr-1 z-10">
+                            <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 fill-red-600" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M8 5.14v14l11-7-11-7z"/>
+                            </svg>
+                          </span>
+                          <span className="bg-red-600 text-white text-[9px] font-extrabold tracking-widest pl-2.5 pr-2.5 py-0.5 rounded-r-full">
+                            LIVE
+                          </span>
+                        </span>
+                      )}
+                      {course.deliveryType === "recorded" && (
+                        <span className="bg-white/95 backdrop-blur-sm text-gray-700 text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1">
+                          <span className="w-1 h-1 rounded-full bg-gray-400 flex-shrink-0" />
+                          Recorded
+                        </span>
+                      )}
+                      {course.deliveryType === "live_and_recorded" && (
+                        <span className="flex items-center shadow-md overflow-hidden rounded-full">
+                          <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-red-600 flex-shrink-0 -mr-1 z-10">
+                            <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 fill-red-600" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M8 5.14v14l11-7-11-7z"/>
+                            </svg>
+                          </span>
+                          <span className="bg-red-600 text-white text-[9px] font-extrabold tracking-widest pl-1.5 py-0.5">
+                            LIVE
+                          </span>
+                          <span className="bg-gray-800 text-white text-[9px] font-extrabold tracking-widest pl-1 pr-2 py-0.5 rounded-r-full">
+                            + REC
+                          </span>
+                        </span>
+                      )}
+                      {course.isComingSoon && (
+                        <span className="bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-md shadow-sm">
+                          Coming Soon
                         </span>
                       )}
                       {course.category && (
-                        <span className="bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-semibold px-2.5 py-1 rounded-md shadow-sm">
+                        <span className="bg-white/95 backdrop-blur-sm text-gray-800 text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-sm">
                           {course.category}
                         </span>
                       )}
@@ -223,7 +266,11 @@ const CourseHero = ({
                         <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                         {course.rating}
                       </div>
-                      {enrolledSlugs.has(course.slug) ? (
+                      {course.isComingSoon ? (
+                        <span className="ml-auto bg-gray-900 dark:bg-gray-700 hover:bg-primary-600 dark:hover:bg-primary-600 text-white text-xs font-semibold px-3 py-1.5 rounded-md transition-colors duration-200 whitespace-nowrap">
+                          Check Details
+                        </span>
+                      ) : enrolledSlugs.has(course.slug) ? (
                         <span className="ml-auto bg-primary-600 text-white text-xs font-semibold px-3 py-1.5 rounded-md transition-colors duration-200 whitespace-nowrap">
                           Start Learning
                         </span>

@@ -59,7 +59,7 @@ export default function WhatsAppWidget() {
                 👋 Hi there! Welcome to <strong>The Law Project</strong>.
               </p>
               <p className="text-sm text-gray-700 mt-1.5 leading-relaxed">
-                Have questions about our CLAT PG / UG courses, mentorship programmes, or test series? We're here to help!
+                Have questions about our CLAT-UG, CLAT-PG, Judiciary or other courses, mentorship programmes, or test series? We're here to help!
               </p>
               <p className="text-[10px] text-gray-400 text-right mt-2">Just now</p>
             </div>

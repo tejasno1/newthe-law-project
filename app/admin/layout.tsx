@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   BookOpen, FileText,
-  BarChart2, ClipboardList, Menu, X, Tag, Video, Upload, Library,
+  BarChart2, ClipboardList, Menu, X, Tag, Video, Upload, Library, MessageSquare, Zap, BookMarked,
 } from "lucide-react";
 import Image from "next/image";
 import AdminLogoutButton from "./AdminLogoutButton";
@@ -15,8 +15,11 @@ const NAV = [
   { href: "/admin/course-videos", label: "Course Videos",         icon: Video,         match: (p: string) => p.startsWith("/admin/course-videos") },
   { href: "/admin/mock-tests",       label: "Mock Tests",            icon: ClipboardList, match: (p: string) => p.startsWith("/admin/mock-tests") },
   { href: "/admin/upload-questions", label: "Upload Questions",      icon: Upload,        match: (p: string) => p.startsWith("/admin/upload-questions") },
+  { href: "/admin/quick-skills",      label: "QuickSkills",           icon: Zap,           match: (p: string) => p.startsWith("/admin/quick-skills") },
   { href: "/admin/blogs",            label: "Blog Posts",            icon: FileText,      match: (p: string) => p.startsWith("/admin/blogs") },
   { href: "/admin/resources",        label: "Resources",             icon: Library,       match: (p: string) => p.startsWith("/admin/resources") },
+  { href: "/admin/question-bank",    label: "Question Bank",         icon: BookMarked,    match: (p: string) => p.startsWith("/admin/question-bank") },
+  { href: "/admin/testimonials",     label: "Testimonials",          icon: MessageSquare, match: (p: string) => p.startsWith("/admin/testimonials") },
   { href: "/admin/categories",    label: "Course Category Order", icon: Tag,           match: (p: string) => p.startsWith("/admin/categories") },
 ];
 

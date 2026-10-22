@@ -30,7 +30,7 @@ export async function POST(
     body.testSlug
       ? supabaseService
           .from("mock_tests")
-          .select("slug, total_marks, marks_per_correct, negative_mark")
+          .select("slug, title, total_marks, marks_per_correct, negative_mark")
           .eq("slug", body.testSlug)
           .single()
       : Promise.resolve({ data: null, error: null }),
@@ -50,7 +50,7 @@ export async function POST(
       ? testMeta
       : await supabaseService
           .from("mock_tests")
-          .select("slug, total_marks, marks_per_correct, negative_mark")
+          .select("slug, title, total_marks, marks_per_correct, negative_mark")
           .eq("slug", testSlug)
           .single()
           .then((r) => r.data);
@@ -126,9 +126,11 @@ export async function POST(
     }).eq("id", params.id),
 
     supabaseService.from("test_results").insert({
+      user_id: user.id,
+      user_email: user.email ?? null,
       candidate_name: candidateName,
       test_slug: attempt.test_slug,
-      test_title: attempt.test_slug,
+      test_title: (finalTestMeta as { title?: string } | null)?.title ?? attempt.test_slug,
       score,
       max_score: maxScore,
       correct,

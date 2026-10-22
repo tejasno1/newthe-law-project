@@ -36,13 +36,20 @@ function resolveIcon(name: string): React.ElementType {
   return ICON_MAP[name] ?? BookOpen;
 }
 
-export default function CategoriesClient({ categories }: { categories: Category[] }) {
+export default function CategoriesClient({
+  categories,
+  unmanagedCategories = [],
+}: {
+  categories: Category[];
+  unmanagedCategories?: string[];
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [name, setName] = useState("");
   const [iconName, setIconName] = useState("BookOpen");
   const [addError, setAddError] = useState<string | null>(null);
   const [addPending, startAdd] = useTransition();
+  const [quickAdding, setQuickAdding] = useState<string | null>(null);
 
   const refresh = () => router.refresh();
 
@@ -64,6 +71,18 @@ export default function CategoriesClient({ categories }: { categories: Category[
     if (!confirm(`Delete "${catName}"? Courses inside it are not affected.`)) return;
     startTransition(async () => {
       await deleteCategory(id);
+      refresh();
+    });
+  };
+
+  const handleQuickAdd = (catName: string) => {
+    setQuickAdding(catName);
+    const fd = new FormData();
+    fd.append("name", catName);
+    fd.append("icon_name", "BookOpen");
+    startAdd(async () => {
+      await createCategory(null, fd);
+      setQuickAdding(null);
       refresh();
     });
   };
@@ -228,6 +247,36 @@ export default function CategoriesClient({ categories }: { categories: Category[
           </ul>
         )}
       </div>
+
+      {/* Unmanaged categories detected from courses */}
+      {unmanagedCategories.length > 0 && (
+        <div className="bg-white rounded-2xl border border-amber-200 overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-amber-100 flex items-center gap-2 bg-amber-50">
+            <Tag size={14} className="text-amber-500" />
+            <span className="text-sm font-semibold text-amber-800">Detected on courses — not in order yet</span>
+            <span className="ml-auto text-xs text-amber-500">{unmanagedCategories.length} found</span>
+          </div>
+          <ul className="divide-y divide-gray-50">
+            {unmanagedCategories.map((name) => (
+              <li key={name} className="flex items-center gap-3 px-5 py-3.5">
+                <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                  <BookOpen size={17} className="text-amber-500" />
+                </div>
+                <span className="flex-1 text-sm font-semibold text-gray-700">{name}</span>
+                <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-medium">Not in order</span>
+                <button
+                  onClick={() => handleQuickAdd(name)}
+                  disabled={quickAdding === name || addPending}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#4d65ff] hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <Plus size={12} />
+                  {quickAdding === name ? "Adding…" : "Add to order"}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Tip */}
       <div className="bg-amber-50 border border-amber-100 rounded-xl px-5 py-4 text-sm text-amber-800 leading-relaxed">

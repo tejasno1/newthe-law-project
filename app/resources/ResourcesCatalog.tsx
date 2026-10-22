@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ArrowRight } from "lucide-react";
+import { Search, ArrowRight, ChevronDown } from "lucide-react";
 import dynamic from "next/dynamic";
-import type { Resource, ResourceCategory } from "@/lib/resources";
+import type { Resource, ResourceCategory, ExamCategory } from "@/lib/resources";
 
 const PdfViewer = dynamic(() => import("@/components/PdfViewer"), { ssr: false });
 
@@ -22,17 +22,31 @@ function getPalette(index: number) {
 interface Props {
   resources: Resource[];
   categories: ResourceCategory[];
+  examCategories: ExamCategory[];
   candidateName: string;
   isLoggedIn: boolean;
 }
 
 interface ViewerState { title: string; path: string }
 
-export default function ResourcesCatalog({ resources, categories, candidateName, isLoggedIn }: Props) {
+export default function ResourcesCatalog({ resources, categories, examCategories, candidateName, isLoggedIn }: Props) {
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<number | "all">("all");
+  const [activeExam, setActiveExam] = useState<string>(examCategories[0]?.name ?? "all");
+  const [examDropdownOpen, setExamDropdownOpen] = useState(false);
+  const examDropdownRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [viewer, setViewer] = useState<ViewerState | null>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (examDropdownRef.current && !examDropdownRef.current.contains(e.target as Node)) {
+        setExamDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   function openResource(r: Resource) {
     if (!r.file_path) return;
@@ -45,9 +59,10 @@ export default function ResourcesCatalog({ resources, categories, candidateName,
 
   const filtered = resources.filter((r) => {
     const matchCat = activeCategory === "all" || r.category_id === activeCategory;
+    const matchExam = activeExam === "all" || r.exam_category === activeExam;
     const q = query.toLowerCase();
     const matchQ = !q || r.title.toLowerCase().includes(q) || (r.description ?? "").toLowerCase().includes(q);
-    return matchCat && matchQ;
+    return matchCat && matchExam && matchQ;
   });
 
   return (
@@ -91,31 +106,75 @@ export default function ResourcesCatalog({ resources, categories, candidateName,
           />
         </div>
 
-        {/* Filter chips — horizontal scroll on mobile, wrap on desktop */}
-        <div className="flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0 gap-2 mb-6 sm:mb-8 pb-1 sm:pb-0">
-          <button
-            onClick={() => setActiveCategory("all")}
-            className={`flex-shrink-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
-              activeCategory === "all"
-                ? "bg-primary-600 text-white shadow-sm"
-                : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
-            }`}
-          >
-            All
-          </button>
-          {categories.map((cat) => (
+        {/* Filters row: type chips + exam dropdown */}
+        <div className="flex flex-wrap items-center gap-2 mb-6 sm:mb-8">
+          {/* Type chips */}
+          <div className="flex flex-nowrap overflow-x-auto scrollbar-hide gap-2 pb-0.5">
             <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
+              onClick={() => setActiveCategory("all")}
               className={`flex-shrink-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
-                activeCategory === cat.id
+                activeCategory === "all"
                   ? "bg-primary-600 text-white shadow-sm"
                   : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
               }`}
             >
-              {cat.name}
+              All
             </button>
-          ))}
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`flex-shrink-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+                  activeCategory === cat.id
+                    ? "bg-primary-600 text-white shadow-sm"
+                    : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Exam category dropdown */}
+          {examCategories.length > 0 && (
+            <div ref={examDropdownRef} className="relative ml-auto flex-shrink-0">
+              <button
+                onClick={() => setExamDropdownOpen((v) => !v)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-orange-300 bg-white dark:bg-gray-800 text-sm font-semibold text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-colors whitespace-nowrap"
+              >
+                <span className="max-w-[140px] truncate">{activeExam === "all" ? "All Exams" : activeExam}</span>
+                <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${examDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {examDropdownOpen && (
+                <div className="absolute right-0 top-full mt-1 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-1 min-w-[180px]">
+                  <button
+                    onClick={() => { setActiveExam("all"); setExamDropdownOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
+                      activeExam === "all"
+                        ? "bg-orange-50 text-orange-600 font-semibold"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    }`}
+                  >
+                    All Exams
+                  </button>
+                  {examCategories.map((ec) => (
+                    <button
+                      key={ec.id}
+                      onClick={() => { setActiveExam(ec.name); setExamDropdownOpen(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
+                        activeExam === ec.name
+                          ? "bg-orange-50 text-orange-600 font-semibold"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      {ec.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Grid — 2 cols on mobile, 2 on sm, 3 on lg, 4 on xl */}
@@ -125,7 +184,7 @@ export default function ResourcesCatalog({ resources, categories, candidateName,
               const pal = getPalette(i);
               const catName = r.resource_categories?.name ?? "";
               const hasPdf = !!r.file_path;
-              const tags = [catName || null, r.is_free ? "Free" : "Premium"].filter(Boolean) as string[];
+              const tags = [catName || null, r.exam_category || null, r.is_free ? "Free" : "Premium"].filter(Boolean) as string[];
 
               return (
                 <div

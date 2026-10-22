@@ -12,12 +12,15 @@ interface Props {
 }
 
 export default function PdfViewer({ title, path, candidateName, onClose, apiRoute = "/api/course-resource" }: Props) {
-  const [pages, setPages] = useState<string[]>([]);
+  // Pages are kept as live <canvas> elements, never as <img src="..."> or a CSS
+  // background-image — bulk "image downloader" extensions scan the DOM for those
+  // two patterns specifically; a canvas has no URL for them to find or fetch.
+  const [pagesCanvases, setPagesCanvases] = useState<(HTMLCanvasElement | null)[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const pageRefs = useRef<(HTMLImageElement | null)[]>([]);
+  const pageWrapperRefs = useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,7 +43,7 @@ export default function PdfViewer({ title, path, candidateName, onClose, apiRout
         setTotal(pdf.numPages);
         setLoading(false);
 
-        const wm = (candidateName || "The Law Project").toUpperCase();
+        const wm = "THE LAW PROJECT";
 
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
           if (cancelled) break;
@@ -81,9 +84,9 @@ export default function PdfViewer({ title, path, candidateName, onClose, apiRout
           ctx.restore();
 
           if (!cancelled) {
-            setPages((prev) => {
+            setPagesCanvases((prev) => {
               const next = [...prev];
-              next[pageNum - 1] = canvas.toDataURL("image/jpeg", 0.92);
+              next[pageNum - 1] = canvas;
               return next;
             });
           }
@@ -98,24 +101,38 @@ export default function PdfViewer({ title, path, candidateName, onClose, apiRout
 
     render();
     return () => { cancelled = true; };
-  }, [path, candidateName]);
+  }, [path]);
 
-  // Track which page is visible
+  // Track which page is visible (wrapper divs exist as soon as `total` is known,
+  // independent of whether that page's canvas has finished rendering yet)
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            const idx = pageRefs.current.findIndex((r) => r === entry.target);
+            const idx = pageWrapperRefs.current.findIndex((r) => r === entry.target);
             if (idx >= 0) setCurrentPage(idx + 1);
           }
         }
       },
       { root: containerRef.current, threshold: 0.5 }
     );
-    pageRefs.current.forEach((el) => el && observer.observe(el));
+    pageWrapperRefs.current.forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
-  }, [pages]);
+  }, [total]);
+
+  // Attach each rendered canvas into its wrapper div once both exist
+  useEffect(() => {
+    pagesCanvases.forEach((canvas, i) => {
+      const wrapper = pageWrapperRefs.current[i];
+      if (!canvas || !wrapper || wrapper.firstChild === canvas) return;
+      wrapper.innerHTML = "";
+      canvas.style.width = "100%";
+      canvas.style.height = "auto";
+      canvas.style.display = "block";
+      wrapper.appendChild(canvas);
+    });
+  }, [pagesCanvases]);
 
   // Lock body scroll while viewer is open
   useEffect(() => {
@@ -176,7 +193,7 @@ export default function PdfViewer({ title, path, candidateName, onClose, apiRout
   }, []);
 
   const scrollToPage = (n: number) => {
-    const el = pageRefs.current[n - 1];
+    const el = pageWrapperRefs.current[n - 1];
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -247,24 +264,17 @@ export default function PdfViewer({ title, path, candidateName, onClose, apiRout
           <div className="max-w-3xl mx-auto space-y-2">
             {Array.from({ length: total }).map((_, i) => (
               <div key={i} className="relative bg-gray-800 rounded-lg overflow-hidden">
-                {pages[i] ? (
-                  <img
-                    ref={(el) => { pageRefs.current[i] = el; }}
-                    src={pages[i]}
-                    alt={`Page ${i + 1}`}
-                    draggable={false}
-                    className="w-full block"
-                    style={{ userSelect: "none", WebkitUserSelect: "none" }}
-                  />
-                ) : (
-                  <div
-                    ref={(el) => { if (el) pageRefs.current[i] = el as unknown as HTMLImageElement; }}
-                    className="flex items-center justify-center bg-gray-800 rounded-lg"
-                    style={{ aspectRatio: "0.707" }}
-                  >
-                    <Loader2 className="w-6 h-6 text-gray-500 animate-spin" />
-                  </div>
-                )}
+                <div
+                  ref={(el) => { pageWrapperRefs.current[i] = el; }}
+                  className="w-full"
+                  style={{
+                    userSelect: "none",
+                    WebkitUserSelect: "none",
+                    ...(pagesCanvases[i] ? {} : { aspectRatio: "0.707", display: "flex", alignItems: "center", justifyContent: "center" }),
+                  }}
+                >
+                  {!pagesCanvases[i] && <Loader2 className="w-6 h-6 text-gray-500 animate-spin" />}
+                </div>
                 <span className="absolute bottom-2 right-3 text-[10px] text-white/30 select-none pointer-events-none">
                   {i + 1} / {total}
                 </span>

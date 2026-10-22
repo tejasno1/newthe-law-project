@@ -19,7 +19,7 @@ export default function AboutPage() {
       <Navbar />
 
       {/* ── Hero ── */}
-      <section className="bg-gray-50 dark:bg-gray-800 pt-28 lg:pt-24 pb-10 sm:pb-16 border-b border-gray-100 dark:border-gray-700">
+      <section className="bg-gray-50 dark:bg-gray-800 pt-[9.5rem] lg:pt-[8.5rem] pb-10 sm:pb-16 border-b border-gray-100 dark:border-gray-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div {...fadeUp(0)} className="flex justify-center mb-4 sm:mb-6">
             <span className="inline-flex items-center gap-2 text-xs font-medium bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2 shadow-sm text-gray-600 dark:text-gray-400">
@@ -57,7 +57,7 @@ export default function AboutPage() {
             </motion.p>
 
             <motion.p {...fadeUp(0.08)} className="text-gray-600 dark:text-gray-400 leading-relaxed text-sm sm:text-base mb-6 sm:mb-10">
-              Whether you are preparing for CLAT-UG, CLAT PG, Judiciary, UGC NET Law, 3-Year LL.B. Entrance, looking for upgrading yourself as a law student, or a lawyer by developing necessary skills, or simply wish to strengthen your understanding of law, The Law Project offers carefully curated learning experiences through multiple formats.
+              Whether you are preparing for CLAT-UG, CLAT-PG, Judiciary, UGC-NET Law, LLB Subjects, or any other govt law exam, looking to upgrade yourself as a law student or lawyer by developing necessary skills, or simply wish to strengthen your understanding of law, The Law Project offers carefully curated learning experiences through multiple formats.
             </motion.p>
           </motion.div>
 

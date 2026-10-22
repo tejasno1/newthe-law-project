@@ -45,7 +45,7 @@ export default function CareersPage() {
       <Navbar />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="bg-[#030712] pt-[6.5rem] lg:pt-[5.5rem] pb-14 sm:pb-20 relative overflow-hidden">
+      <section className="bg-[#030712] pt-[9rem] lg:pt-[8rem] pb-14 sm:pb-20 relative overflow-hidden">
         {/* Subtle grid */}
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute inset-0 opacity-[0.14]
