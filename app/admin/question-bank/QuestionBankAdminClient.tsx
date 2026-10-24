@@ -16,6 +16,7 @@ import {
 } from "@/app/admin/actions";
 import type { QuestionBankItem, QuestionBankCategory } from "@/lib/questionBank";
 import type { ExamCategory } from "@/lib/resources";
+import BulkUploadPanel from "./BulkUploadPanel";
 
 interface Props {
   items: QuestionBankItem[];
@@ -392,6 +393,9 @@ export default function QuestionBankAdminClient({ items: init, categories: initC
           </div>
         </form>
       </div>
+
+      {/* BULK UPLOAD */}
+      <BulkUploadPanel categories={categories} examCategories={examCategories} onDone={flash} />
 
       {/* CATEGORIES */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
