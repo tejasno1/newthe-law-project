@@ -1,10 +1,17 @@
 import { supabaseService } from "@/lib/supabase/service";
-import { PASS_SLUG } from "@/lib/fulfillment";
 
 export interface QuestionBankCategory {
   id: number;
   name: string;
   slug: string;
+  sort_order: number;
+}
+
+export interface QuestionBankFile {
+  id: number;
+  item_id: number;
+  title: string;
+  file_path: string;
   sort_order: number;
 }
 
@@ -20,24 +27,28 @@ export interface QuestionBankItem {
   is_published: boolean;
   sort_order: number;
   created_at: string;
+  files: QuestionBankFile[];
 }
 
-/** IDs of paid question sets this user may open, and whether they hold the All-Access pass. */
-export async function getQuestionBankAccess(userId: string): Promise<{ hasPass: boolean; purchasedIds: number[] }> {
-  const [{ count }, { data }] = await Promise.all([
-    supabaseService
-      .from("enrollments")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("course_slug", PASS_SLUG)
-      .eq("payment_status", "paid"),
-    supabaseService
-      .from("question_bank_purchases")
-      .select("item_id")
-      .eq("user_id", userId),
-  ]);
+const ITEM_SELECT = "*, files:question_bank_files(id, item_id, title, file_path, sort_order)";
+
+function withSortedFiles(rows: unknown[] | null): QuestionBankItem[] {
+  return ((rows ?? []) as QuestionBankItem[]).map((item) => ({
+    ...item,
+    files: [...(item.files ?? [])].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id),
+  }));
+}
+
+/**
+ * IDs of paid question sets this user has bought. Question sets are sold
+ * separately — courses and the All-Access Plan do not unlock them.
+ */
+export async function getQuestionBankAccess(userId: string): Promise<{ purchasedIds: number[] }> {
+  const { data } = await supabaseService
+    .from("question_bank_purchases")
+    .select("item_id")
+    .eq("user_id", userId);
   return {
-    hasPass: (count ?? 0) > 0,
     purchasedIds: (data ?? []).map((r: { item_id: number }) => Number(r.item_id)),
   };
 }
@@ -54,18 +65,18 @@ export async function getAllQuestionBankCategories(): Promise<QuestionBankCatego
 export async function getAllPublishedQuestionBankItems(): Promise<QuestionBankItem[]> {
   const { data } = await supabaseService
     .from("question_bank")
-    .select("*")
+    .select(ITEM_SELECT)
     .eq("is_published", true)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
-  return (data ?? []) as QuestionBankItem[];
+  return withSortedFiles(data);
 }
 
 export async function getAllQuestionBankAdmin(): Promise<QuestionBankItem[]> {
   const { data } = await supabaseService
     .from("question_bank")
-    .select("*")
+    .select(ITEM_SELECT)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
-  return (data ?? []) as QuestionBankItem[];
+  return withSortedFiles(data);
 }

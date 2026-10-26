@@ -13,16 +13,17 @@ export async function GET(req: Request) {
   if (!path) return NextResponse.json({ error: "Missing path" }, { status: 400 });
 
   // Only sign files that belong to a published question set the user may open.
-  const { data: item } = await supabaseAdmin
-    .from("question_bank")
-    .select("id, is_free, is_published")
+  const { data: file } = await supabaseAdmin
+    .from("question_bank_files")
+    .select("item:question_bank(id, is_free, is_published)")
     .eq("file_path", path)
     .maybeSingle();
+  const item = file?.item as unknown as { id: number; is_free: boolean; is_published: boolean } | null | undefined;
   if (!item || !item.is_published) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (!item.is_free) {
-    const { hasPass, purchasedIds } = await getQuestionBankAccess(user.id);
-    if (!hasPass && !purchasedIds.includes(Number(item.id))) {
+    const { purchasedIds } = await getQuestionBankAccess(user.id);
+    if (!purchasedIds.includes(Number(item.id))) {
       return NextResponse.json({ error: "Purchase required" }, { status: 403 });
     }
   }

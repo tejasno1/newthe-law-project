@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ArrowRight, ChevronDown, Lock, Loader2 } from "lucide-react";
+import { Search, ArrowRight, ChevronDown, Lock, Loader2, FileText, X, Check } from "lucide-react";
 import { openRazorpayCheckout, parseRupees, recoverPendingOrders, verifyOrder } from "@/lib/razorpay";
 import dynamic from "next/dynamic";
 import type { QuestionBankItem, QuestionBankCategory } from "@/lib/questionBank";
@@ -27,14 +27,13 @@ interface Props {
   examCategories: ExamCategory[];
   candidateName: string;
   isLoggedIn: boolean;
-  hasPass: boolean;
   purchasedIds: number[];
   userEmail: string;
 }
 
 interface ViewerState { title: string; path: string }
 
-export default function QuestionBankCatalog({ items, categories, examCategories, candidateName, isLoggedIn, hasPass, purchasedIds, userEmail }: Props) {
+export default function QuestionBankCatalog({ items, categories, examCategories, candidateName, isLoggedIn, purchasedIds, userEmail }: Props) {
   const router = useRouter();
   const [activeSubject, setActiveSubject] = useState<string>("all");
   const [activeExam, setActiveExam] = useState<string>("all");
@@ -42,6 +41,7 @@ export default function QuestionBankCatalog({ items, categories, examCategories,
   const examDropdownRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [viewer, setViewer] = useState<ViewerState | null>(null);
+  const [picker, setPicker] = useState<QuestionBankItem | null>(null);
   const [owned, setOwned] = useState<Set<number>>(() => new Set(purchasedIds));
   const [payingId, setPayingId] = useState<number | null>(null);
 
@@ -54,7 +54,7 @@ export default function QuestionBankCatalog({ items, categories, examCategories,
   useEffect(() => { setOwned(new Set(purchasedIds)); }, [purchasedIds]);
 
   function hasAccess(item: QuestionBankItem) {
-    return item.is_free || hasPass || owned.has(item.id);
+    return item.is_free || owned.has(item.id);
   }
 
   useEffect(() => {
@@ -67,8 +67,18 @@ export default function QuestionBankCatalog({ items, categories, examCategories,
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  /** One PDF opens straight away; a set with several shows the list to pick from. */
+  function showItem(item: QuestionBankItem) {
+    if (item.files.length === 1) {
+      const f = item.files[0];
+      setViewer({ title: f.title || item.title, path: f.file_path });
+    } else {
+      setPicker(item);
+    }
+  }
+
   function openItem(item: QuestionBankItem) {
-    if (!item.file_path) return;
+    if (item.files.length === 0) return;
     if (!isLoggedIn) {
       router.push("/auth/login?redirect=/question-bank&reason=resource");
       return;
@@ -77,7 +87,7 @@ export default function QuestionBankCatalog({ items, categories, examCategories,
       buyItem(item);
       return;
     }
-    setViewer({ title: item.title, path: item.file_path });
+    showItem(item);
   }
 
   async function buyItem(item: QuestionBankItem) {
@@ -96,7 +106,7 @@ export default function QuestionBankCatalog({ items, categories, examCategories,
           return;
         }
         setOwned((prev) => new Set(prev).add(item.id));
-        if (item.file_path) setViewer({ title: item.title, path: item.file_path });
+        if (item.files.length) showItem(item);
       },
     });
     // Resolves once the Razorpay modal is open (or checkout failed to start).
@@ -121,6 +131,43 @@ export default function QuestionBankCatalog({ items, categories, examCategories,
           onClose={() => setViewer(null)}
           apiRoute="/api/question-bank-resource"
         />
+      )}
+
+      {picker && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          onClick={() => setPicker(null)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+              <div className="min-w-0">
+                <h3 className="font-bold text-gray-900 dark:text-white leading-snug">{picker.title}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{picker.files.length} PDFs in this set</p>
+              </div>
+              <button onClick={() => setPicker(null)} className="text-gray-400 hover:text-gray-600 flex-shrink-0" aria-label="Close">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-2">
+              {picker.files.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => { setViewer({ title: f.title, path: f.file_path }); setPicker(null); }}
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <span className="w-9 h-9 rounded-lg bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                  </span>
+                  <span className="flex-1 min-w-0 text-sm font-medium text-gray-900 dark:text-white">{f.title}</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       <section id="question-bank" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12 sm:pt-10 sm:pb-16 lg:pb-20">
@@ -226,14 +273,11 @@ export default function QuestionBankCatalog({ items, categories, examCategories,
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
             {filtered.map((item, i) => {
               const pal = getPalette(i);
-              const hasPdf = !!item.file_path;
+              const hasPdf = item.files.length > 0;
               const unlocked = hasAccess(item);
               const paying = payingId === item.id;
-              const actionLabel = !hasPdf
-                ? "Coming Soon"
-                : unlocked
-                  ? "View Questions"
-                  : `Buy for ₹${parseRupees(item.price).toLocaleString("en-IN")}`;
+              const priceLabel = item.is_free ? "Free" : `₹${parseRupees(item.price).toLocaleString("en-IN")}`;
+              const pdfCount = `${item.files.length} PDF${item.files.length === 1 ? "" : "s"}`;
               const tags = [item.subject || null, item.exam_category || null].filter(Boolean) as string[];
 
               return (
@@ -245,17 +289,22 @@ export default function QuestionBankCatalog({ items, categories, examCategories,
                     className="rounded-lg p-3 sm:p-5 flex-1 flex flex-col"
                     style={{ backgroundColor: pal.bg }}
                   >
-                    <span
-                      className={`self-start inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full mb-2 ${
-                        item.is_free
-                          ? "bg-emerald-500 text-white"
-                          : unlocked
-                            ? "bg-gray-900 text-white"
-                            : "bg-amber-500 text-white"
-                      }`}
-                    >
-                      {item.is_free ? "Free" : unlocked ? "Unlocked" : (<><Lock className="w-2.5 h-2.5" />₹{parseRupees(item.price).toLocaleString("en-IN")}</>)}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                      <span
+                        className={`inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                          item.is_free ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
+                        }`}
+                      >
+                        {!item.is_free && !unlocked && <Lock className="w-2.5 h-2.5" />}
+                        {priceLabel}
+                      </span>
+                      {!item.is_free && unlocked && (
+                        <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-gray-900 text-white">
+                          <Check className="w-2.5 h-2.5" />
+                          Unlocked
+                        </span>
+                      )}
+                    </div>
                     <h3
                       className="font-bold text-sm sm:text-base lg:text-xl leading-snug mb-1.5 sm:mb-2 line-clamp-2"
                       style={{ color: pal.text }}
@@ -272,6 +321,16 @@ export default function QuestionBankCatalog({ items, categories, examCategories,
                       </p>
                     )}
 
+                    {hasPdf && (
+                      <p
+                        className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold mb-2"
+                        style={{ color: pal.text, opacity: 0.8 }}
+                      >
+                        <FileText className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                        {pdfCount}
+                      </p>
+                    )}
+
                     <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-auto pt-1.5 sm:pt-2">
                       {tags.map((tag) => (
                         <span
@@ -285,33 +344,37 @@ export default function QuestionBankCatalog({ items, categories, examCategories,
                     </div>
                   </div>
 
-                  <div className="px-1.5 sm:px-3 pt-3 sm:pt-4 pb-1.5 sm:pb-2 flex items-center justify-between">
-                    <button
-                      onClick={() => openItem(item)}
-                      disabled={!hasPdf || paying}
-                      className={`text-xs sm:text-sm font-bold transition-colors text-left ${
-                        !hasPdf
-                          ? "text-gray-400 cursor-not-allowed"
+                  <div className="px-1.5 sm:px-3 pt-3 sm:pt-4 pb-1.5 sm:pb-2 flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className={`text-sm sm:text-lg font-extrabold leading-none ${item.is_free ? "text-emerald-600" : "text-gray-900"}`}>
+                        {priceLabel}
+                      </p>
+                      <p className="text-[10px] sm:text-[11px] text-gray-400 mt-1">
+                        {item.is_free
+                          ? "No payment needed"
                           : unlocked
-                            ? "text-gray-900 hover:text-gray-600"
-                            : "text-amber-600 hover:text-amber-700"
-                      }`}
-                    >
-                      {paying ? "Opening payment…" : actionLabel}
-                    </button>
+                            ? "You own this set"
+                            : hasPdf && item.files.length > 1 ? `One-time · all ${pdfCount}` : "One-time payment"}
+                      </p>
+                    </div>
                     <button
                       onClick={() => openItem(item)}
                       disabled={!hasPdf || paying}
-                      style={{ backgroundColor: "#F5F5F5" }}
-                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-md flex items-center justify-center transition-all flex-shrink-0 ${
-                        hasPdf ? "text-gray-700 group-hover:translate-x-0.5" : "text-gray-300 cursor-not-allowed"
+                      className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors flex-shrink-0 ${
+                        !hasPdf
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : unlocked
+                            ? "bg-gray-900 text-white hover:bg-gray-700"
+                            : "bg-amber-500 text-white hover:bg-amber-600"
                       }`}
                     >
                       {paying
-                        ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
-                        : unlocked
-                          ? <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          : <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Opening…</>
+                        : !hasPdf
+                          ? "Coming soon"
+                          : unlocked
+                            ? <>View<ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" /></>
+                            : <><Lock className="w-3.5 h-3.5" />Buy now</>}
                     </button>
                   </div>
                 </div>

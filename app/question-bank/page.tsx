@@ -18,7 +18,7 @@ export default async function QuestionBankPage() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const userName = user?.user_metadata?.full_name ?? user?.email ?? "";
-  const access = user ? await getQuestionBankAccess(user.id) : { hasPass: false, purchasedIds: [] };
+  const access = user ? await getQuestionBankAccess(user.id) : { purchasedIds: [] };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -34,7 +34,6 @@ export default async function QuestionBankPage() {
         examCategories={examCategories}
         candidateName={userName}
         isLoggedIn={!!user}
-        hasPass={access.hasPass}
         purchasedIds={access.purchasedIds}
         userEmail={user?.email ?? ""}
       />

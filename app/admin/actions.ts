@@ -951,12 +951,17 @@ export async function deleteQuestionBankCategory(id: number) {
   return {};
 }
 
+export interface QuestionBankFileInput {
+  title: string;
+  filePath: string;
+}
+
 export interface QuestionBankFormData {
   title: string;
   description?: string;
   subject?: string | null;
   examCategory?: string | null;
-  filePath?: string | null;
+  files?: QuestionBankFileInput[];
   isFree?: boolean;
   price?: number;
   isPublished?: boolean;
@@ -986,27 +991,74 @@ export async function uploadQuestionBankFile(formData: FormData) {
   return { path };
 }
 
+/** Removes uploaded PDFs that never got saved to a set (e.g. the admin cancelled the form). */
+export async function discardQuestionBankUploads(paths: string[]) {
+  if (paths.length === 0) return {};
+  const { data: used } = await supabaseAdmin
+    .from("question_bank_files")
+    .select("file_path")
+    .in("file_path", paths);
+  const usedSet = new Set((used ?? []).map((r: { file_path: string }) => r.file_path));
+  const orphans = paths.filter((p) => !usedSet.has(p));
+  if (orphans.length) await supabaseAdmin.storage.from("question-bank").remove(orphans);
+  return {};
+}
+
+/** Makes the set's PDF list exactly `files` (in order) and deletes removed PDFs from storage. */
+async function syncQuestionBankFiles(itemId: number, files: QuestionBankFileInput[]) {
+  const { data: existing, error: readErr } = await supabaseAdmin
+    .from("question_bank_files")
+    .select("file_path")
+    .eq("item_id", itemId);
+  if (readErr) return { error: readErr.message };
+
+  const { error: delErr } = await supabaseAdmin.from("question_bank_files").delete().eq("item_id", itemId);
+  if (delErr) return { error: delErr.message };
+
+  if (files.length) {
+    const { error: insErr } = await supabaseAdmin.from("question_bank_files").insert(
+      files.map((f, i) => ({ item_id: itemId, title: f.title, file_path: f.filePath, sort_order: i })),
+    );
+    if (insErr) return { error: insErr.message };
+  }
+
+  const keep = new Set(files.map((f) => f.filePath));
+  const removed = (existing ?? []).map((r: { file_path: string }) => r.file_path).filter((p) => !keep.has(p));
+  if (removed.length) await supabaseAdmin.storage.from("question-bank").remove(removed);
+  return {};
+}
+
+function questionBankRow(data: QuestionBankFormData, pricing: { is_free: boolean; price: number }) {
+  return {
+    title: data.title,
+    description: data.description ?? null,
+    subject: data.subject ?? null,
+    exam_category: data.examCategory ?? null,
+    ...pricing,
+    is_published: data.isPublished ?? true,
+    sort_order: data.sortOrder ?? 0,
+  };
+}
+
 export async function createQuestionBankItem(data: QuestionBankFormData) {
   const pricing = questionBankPricing(data);
   if ("error" in pricing) return { error: pricing.error };
   const { error, data: row } = await supabaseAdmin
     .from("question_bank")
-    .insert({
-      title: data.title,
-      description: data.description ?? null,
-      subject: data.subject ?? null,
-      exam_category: data.examCategory ?? null,
-      file_path: data.filePath ?? null,
-      ...pricing,
-      is_published: data.isPublished ?? true,
-      sort_order: data.sortOrder ?? 0,
-    })
+    .insert(questionBankRow(data, pricing))
     .select("id")
     .single();
   if (error) return { error: error.message };
+  const id = (row as { id: number }).id;
+  const sync = await syncQuestionBankFiles(id, data.files ?? []);
+  if (sync.error) {
+    // Don't leave a set without its PDFs behind; the uploads stay so the admin can retry.
+    await supabaseAdmin.from("question_bank").delete().eq("id", id);
+    return { error: sync.error };
+  }
   revalidatePath("/admin/question-bank");
   revalidatePath("/question-bank");
-  return { id: (row as { id: number }).id };
+  return { id };
 }
 
 export async function updateQuestionBankItem(id: number, data: QuestionBankFormData) {
@@ -1014,27 +1066,25 @@ export async function updateQuestionBankItem(id: number, data: QuestionBankFormD
   if ("error" in pricing) return { error: pricing.error };
   const { error } = await supabaseAdmin
     .from("question_bank")
-    .update({
-      title: data.title,
-      description: data.description ?? null,
-      subject: data.subject ?? null,
-      exam_category: data.examCategory ?? null,
-      file_path: data.filePath ?? null,
-      ...pricing,
-      is_published: data.isPublished ?? true,
-      sort_order: data.sortOrder ?? 0,
-    })
+    .update(questionBankRow(data, pricing))
     .eq("id", id);
   if (error) return { error: error.message };
+  const sync = await syncQuestionBankFiles(id, data.files ?? []);
+  if (sync.error) return { error: sync.error };
   revalidatePath("/admin/question-bank");
   revalidatePath("/question-bank");
   return {};
 }
 
-export async function deleteQuestionBankItem(id: number, filePath?: string | null) {
-  if (filePath) {
-    await supabaseAdmin.storage.from("question-bank").remove([filePath]);
-  }
+export async function deleteQuestionBankItem(id: number) {
+  const [{ data: files }, { data: item }] = await Promise.all([
+    supabaseAdmin.from("question_bank_files").select("file_path").eq("item_id", id),
+    supabaseAdmin.from("question_bank").select("file_path").eq("id", id).maybeSingle(),
+  ]);
+  const paths = new Set((files ?? []).map((r: { file_path: string }) => r.file_path));
+  if (item?.file_path) paths.add(item.file_path);
+  if (paths.size) await supabaseAdmin.storage.from("question-bank").remove(Array.from(paths));
+
   const { error } = await supabaseAdmin.from("question_bank").delete().eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/admin/question-bank");
