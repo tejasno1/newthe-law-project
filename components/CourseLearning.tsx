@@ -7,11 +7,83 @@ import {
   ChevronRight, ChevronLeft, Play, Pause, BookOpen,
   Clock, Bookmark, MoreHorizontal, CheckCircle2,
   FileText, StickyNote, Maximize2, Minimize2,
-  Check, Settings, Volume2, VolumeX, Eye,
+  Check, Settings, Volume2, VolumeX, Eye, RotateCcw, RotateCw,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
 const PdfViewer = dynamic(() => import("@/components/PdfViewer"), { ssr: false });
+
+// Lectures are recorded in Hindi: YouTube's auto-generated Hindi captions are the source
+// track, machine-translated by YouTube into the other languages. Translation only works
+// when this matches the video's spoken language.
+const CAPTION_SOURCE_LANG = "hi";
+const CAPTION_LANGUAGES = [
+  { code: "hi", label: "Hindi", native: "हिन्दी" },
+  { code: "en", label: "English", native: "English" },
+  { code: "bn", label: "Bengali", native: "বাংলা" },
+  { code: "ta", label: "Tamil", native: "தமிழ்" },
+  { code: "te", label: "Telugu", native: "తెలుగు" },
+  { code: "mr", label: "Marathi", native: "मराठी" },
+  { code: "gu", label: "Gujarati", native: "ગુજરાતી" },
+  { code: "kn", label: "Kannada", native: "ಕನ್ನಡ" },
+  { code: "ml", label: "Malayalam", native: "മലയാളം" },
+  { code: "pa", label: "Punjabi", native: "ਪੰਜਾਬੀ" },
+  { code: "or", label: "Odia", native: "ଓଡ଼ିଆ" },
+  { code: "ur", label: "Urdu", native: "اردو" },
+  { code: "as", label: "Assamese", native: "অসমীয়া" },
+];
+const CAPTION_LANG_KEY = "tlp-caption-lang";
+
+const SKIP_SECONDS = 10;
+
+/** Back/forward 10s control: a circular arrow with "10" inside. */
+function SkipButton({ dir, onClick, small }: { dir: -1 | 1; onClick: () => void; small?: boolean }) {
+  const Icon = dir < 0 ? RotateCcw : RotateCw;
+  return (
+    <button
+      onClick={onClick}
+      title={dir < 0 ? `Back ${SKIP_SECONDS} seconds (←)` : `Forward ${SKIP_SECONDS} seconds (→)`}
+      aria-label={dir < 0 ? `Back ${SKIP_SECONDS} seconds` : `Forward ${SKIP_SECONDS} seconds`}
+      className={`relative flex items-center justify-center text-white hover:text-gray-300 transition-colors ${small ? "w-5 h-5 sm:w-8 sm:h-8" : "w-8 h-8"}`}
+    >
+      <Icon className={small ? "w-3.5 h-3.5 sm:w-5 sm:h-5" : "w-5 h-5"} strokeWidth={1.75} />
+      <span className={`absolute font-bold leading-none select-none ${small ? "text-[5px] sm:text-[7px]" : "text-[7px]"}`}>{SKIP_SECONDS}</span>
+    </button>
+  );
+}
+
+/**
+ * While paused, the iframe is 3x the visible height: YouTube letterboxes the video in the
+ * middle third (the part we show) and its pause overlays — title bar at the top, "More
+ * videos" shelf and logo at the bottom — land in the cropped-off thirds, so the paused frame
+ * stays readable for note-taking. While playing it's normal size, because captions are also
+ * drawn at the bottom of the iframe and would otherwise be cropped away. With captions on,
+ * the iframe stops short of our always-visible controls bar so captions sit above it.
+ * pointer-events:none so hover never triggers YouTube UI.
+ */
+function setYtCrop(iframe: HTMLIFrameElement | undefined, cropped: boolean, captionsOn = false) {
+  if (!iframe) return;
+  iframe.style.cssText = "position:absolute;left:0;width:100%;border:0;pointer-events:none;" +
+    (cropped ? "top:-100%;height:300%;" : captionsOn ? "top:0;height:88%;" : "top:0;height:100%;");
+}
+
+/** Shows captions in `code` (translated from the source track when needed), or hides them for null. */
+function applyYtCaptions(p: any, code: string | null) {
+  try {
+    if (!code) {
+      p.setOption?.("captions", "track", {});
+      p.unloadModule?.("captions");
+      return;
+    }
+    const track = code === CAPTION_SOURCE_LANG
+      ? { languageCode: code }
+      : { languageCode: CAPTION_SOURCE_LANG, translationLanguage: { languageCode: code } };
+    p.loadModule?.("captions");
+    p.setOption?.("captions", "track", track);
+    // The captions module loads asynchronously; set the track again once it's ready.
+    setTimeout(() => { try { p.setOption?.("captions", "track", track); } catch { /* player gone */ } }, 1000);
+  } catch { /* ignore */ }
+}
 
 const formatTime = (s: number) => {
   if (!isFinite(s) || isNaN(s)) return "0:00";
@@ -80,7 +152,7 @@ export default function CourseLearning({
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [videoQuality, setVideoQuality] = useState("Auto");
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsView, setSettingsView] = useState<"main" | "speed" | "quality">("main");
+  const [settingsView, setSettingsView] = useState<"main" | "speed" | "quality" | "captions">("main");
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
   const [ytStarted, setYtStarted] = useState(false); // tracks if YT video has been played at least once
@@ -88,9 +160,12 @@ export default function CourseLearning({
   // seconds the first time a video starts — unremovable via player params. We keep our
   // own opaque cover up for a moment after first play to hide it.
   const [ytBrandingGuard, setYtBrandingGuard] = useState(false);
+  // The end screen (suggested videos) fills the whole player, so it stays hidden.
+  const [ytEnded, setYtEnded] = useState(false);
   const ytBrandingGuardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [captionsOn, setCaptionsOn] = useState(false);
-  const captionsOnRef = useRef(false); // mirrors captionsOn for use inside stable player-event closures
+  // Selected caption language (null = off); kept across lessons and remembered per browser.
+  const [captionLang, setCaptionLang] = useState<string | null>(null);
+  const captionLangRef = useRef<string | null>(null); // mirrors captionLang for use inside stable player-event closures
   // Fetched on-demand from /api/lesson-video — never stored in the course prop
   const [fetchedVideoUrl, setFetchedVideoUrl] = useState<string | null>(null);
   const [fetchedQualities, setFetchedQualities] = useState<Record<string, string> | null>(null);
@@ -102,6 +177,7 @@ export default function CourseLearning({
     getCurrentTime(): number; getDuration(): number;
     mute(): void; unMute(): void; isMuted(): boolean;
     setPlaybackRate(r: number): void; destroy(): void;
+    getIframe(): HTMLIFrameElement;
   }
   const ytRef = useRef<YTPlayer | null>(null);
   const ytDivRef = useRef<HTMLDivElement>(null);
@@ -292,11 +368,10 @@ export default function CourseLearning({
     if (!videoId) return;
 
     setYtStarted(false); // reset on every new video
+    setYtEnded(false);
     setYtBrandingGuard(false);
     if (ytBrandingGuardTimerRef.current) { clearTimeout(ytBrandingGuardTimerRef.current); ytBrandingGuardTimerRef.current = null; }
     let hasStartedOnce = false;
-    captionsOnRef.current = false;
-    setCaptionsOn(false);
 
     const container = ytDivRef.current;
     let player: YTPlayer | null = null;
@@ -320,14 +395,11 @@ export default function CourseLearning({
         events: {
           onReady: (e: any) => {
             ytRef.current = e.target as YTPlayer;
-            // Fill container and disable pointer events so hover never triggers YouTube UI
-            const iframe = e.target.getIframe?.() as HTMLIFrameElement | undefined;
-            if (iframe) {
-              iframe.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;border:0;pointer-events:none;";
-            }
-            // cc_load_policy:0 can still be overridden by a viewer's browser/OS-level
-            // "always show captions" preference — force them off explicitly too.
-            try { e.target.unloadModule?.("captions"); } catch { /* ignore */ }
+            setYtCrop(e.target.getIframe?.(), true);
+            // Apply the viewer's chosen caption language, or force captions off:
+            // cc_load_policy:0 can still be overridden by a browser/OS-level
+            // "always show captions" preference.
+            applyYtCaptions(e.target, captionLangRef.current);
             const d = e.target.getDuration?.() || 0;
             if (d > 0) setDuration(d);
           },
@@ -335,17 +407,21 @@ export default function CourseLearning({
           // silently re-enable a track from the viewer's saved YouTube preference.
           // Force it off every time modules change, unless the user turned it on via our toggle.
           onApiChange: (e: any) => {
-            if (!captionsOnRef.current) {
+            if (!captionLangRef.current) {
               try { e.target.setOption?.("captions", "track", {}); } catch { /* ignore */ }
             }
           },
           onStateChange: (e: any) => {
             const S = { PLAYING: 1, PAUSED: 2, ENDED: 0 };
+            setYtCrop(e.target.getIframe?.(), e.data !== S.PLAYING, !!captionLangRef.current);
             if (e.data === S.PLAYING) {
               setIsPlaying(true);
               setYtStarted(true);
+              setYtEnded(false);
               if (!hasStartedOnce) {
                 hasStartedOnce = true;
+                // A track set before playback starts is ignored; set the chosen language again.
+                if (captionLangRef.current) applyYtCaptions(e.target, captionLangRef.current);
                 setYtBrandingGuard(true);
                 if (ytBrandingGuardTimerRef.current) clearTimeout(ytBrandingGuardTimerRef.current);
                 ytBrandingGuardTimerRef.current = setTimeout(() => setYtBrandingGuard(false), 3500);
@@ -363,6 +439,7 @@ export default function CourseLearning({
               if (e.data === S.PAUSED || e.data === S.ENDED) {
                 setCurrentTime(ytRef.current?.getCurrentTime?.() || 0);
               }
+              if (e.data === S.ENDED) setYtEnded(true);
             }
           },
         },
@@ -382,23 +459,83 @@ export default function CourseLearning({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isYouTube, activeVideoUrl]);
 
-  const toggleYtCaptions = () => {
-    const p = ytRef.current as any;
-    if (!p) return;
-    const next = !captionsOnRef.current;
-    captionsOnRef.current = next;
-    setCaptionsOn(next);
+  // Restore the viewer's last caption language (browser storage can be unavailable).
+  useEffect(() => {
     try {
-      if (next) {
-        p.loadModule?.("captions");
-        const list = p.getOption?.("captions", "tracklist") || [];
-        p.setOption?.("captions", "track", list[0] || { languageCode: "hi" });
-      } else {
-        p.setOption?.("captions", "track", {});
-        p.unloadModule?.("captions");
+      const saved = localStorage.getItem(CAPTION_LANG_KEY);
+      if (saved && CAPTION_LANGUAGES.some((l) => l.code === saved)) {
+        captionLangRef.current = saved;
+        setCaptionLang(saved);
+        if (ytRef.current) applyYtCaptions(ytRef.current, saved);
       }
     } catch { /* ignore */ }
+  }, []);
+
+  const selectYtCaptions = (code: string | null) => {
+    captionLangRef.current = code;
+    setCaptionLang(code);
+    setSettingsOpen(false);
+    try {
+      if (code) localStorage.setItem(CAPTION_LANG_KEY, code);
+      else localStorage.removeItem(CAPTION_LANG_KEY);
+    } catch { /* ignore */ }
+    if (ytRef.current) {
+      applyYtCaptions(ytRef.current, code);
+      setYtCrop(ytRef.current.getIframe?.(), !isPlaying, !!code);
+    }
   };
+
+  const captionLabel = CAPTION_LANGUAGES.find((l) => l.code === captionLang)?.label ?? "Off";
+
+  // ── Skip back / forward ─────────────────────────────────
+  const [skipFlash, setSkipFlash] = useState<{ delta: number; id: number } | null>(null);
+  const skipFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const skipBy = useCallback((delta: number) => {
+    let t: number | null = null;
+    if (isYouTube) {
+      const p = ytRef.current;
+      // Seeking an unstarted YouTube player starts it, so only skip once it has played.
+      if (!p || !ytStarted) return;
+      const d = p.getDuration?.() || duration;
+      t = Math.max(0, Math.min((p.getCurrentTime?.() || 0) + delta, d > 1 ? d - 1 : d));
+      p.seekTo(t, true);
+    } else if (videoRef.current) {
+      const v = videoRef.current;
+      t = Math.max(0, Math.min(v.currentTime + delta, v.duration || v.currentTime + delta));
+      v.currentTime = t;
+    }
+    if (t === null) return;
+    setCurrentTime(t);
+    setSkipFlash({ delta, id: Date.now() });
+    if (skipFlashTimerRef.current) clearTimeout(skipFlashTimerRef.current);
+    skipFlashTimerRef.current = setTimeout(() => setSkipFlash(null), 700);
+  }, [isYouTube, ytStarted, duration]);
+
+  // ← / → skip 10s, unless the viewer is typing (e.g. in Notes).
+  useEffect(() => {
+    if (!activeVideoUrl) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+      e.preventDefault();
+      skipBy(e.key === "ArrowLeft" ? -SKIP_SECONDS : SKIP_SECONDS);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activeVideoUrl, skipBy]);
+
+  useEffect(() => () => { if (skipFlashTimerRef.current) clearTimeout(skipFlashTimerRef.current); }, []);
+
+  const skipFlashBadge = skipFlash && (
+    <div key={skipFlash.id} className="absolute inset-0 z-[16] flex items-center justify-center pointer-events-none">
+      <span className="bg-black/60 text-white text-sm font-semibold px-3 py-1.5 rounded-full animate-in fade-in zoom-in-95">
+        {skipFlash.delta < 0 ? `−${SKIP_SECONDS}s` : `+${SKIP_SECONDS}s`}
+      </span>
+    </div>
+  );
 
   // Build sorted quality options: [["360p", "url"], ["720p", "url"], ...]
   // Guard against malformed JSONB values (e.g. a plain string instead of an object)
@@ -425,6 +562,10 @@ export default function CourseLearning({
       if (playing) video.play().catch(() => {});
     }, { once: true });
   }, [playbackSpeed]);
+
+  // YouTube frame is shown while playing and while paused (for note-taking); hidden before
+  // first play, during the start-up branding overlay, and on the end screen.
+  const ytFrameVisible = ytStarted && !ytEnded && !ytBrandingGuard;
 
   if (!current) {
     return (
@@ -481,7 +622,8 @@ export default function CourseLearning({
       <div className="flex flex-1 min-h-0 relative">
         {/* ── Sidebar ───────────────────────────────────────── */}
         <aside
-          className="hidden sm:flex sm:relative sm:w-64 lg:w-72 bg-white border-r border-gray-100 flex-col"
+          // Pinned under the 3.5rem header at viewport height, so the lesson list scrolls on its own.
+          className="hidden sm:flex sm:sticky sm:top-14 sm:self-start sm:h-[calc(100dvh-3.5rem)] sm:w-64 lg:w-72 flex-shrink-0 bg-white border-r border-gray-100 flex-col"
         >
           {/* Sidebar header */}
           <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 flex-shrink-0">
@@ -489,7 +631,7 @@ export default function CourseLearning({
           </div>
 
           {/* Lesson list */}
-          <div className="flex-1 overflow-y-auto py-2">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain py-2">
             {course.modules.map((mod, mi) => {
               const moduleLessons = lessons.filter((l) => l.moduleIndex === mi);
               return (
@@ -578,8 +720,9 @@ export default function CourseLearning({
                     ref={ytDivRef}
                     className="w-full"
                     style={isFullscreen
-                      ? { width: "100vw", height: "100vh", opacity: isPlaying && !ytBrandingGuard ? 1 : 0, transition: "opacity 0.15s" }
-                      : { position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", opacity: isPlaying && !ytBrandingGuard ? 1 : 0, transition: "opacity 0.15s" }
+                      // Largest 16:9 box that fits the screen, centred — the iframe crop needs a 16:9 window.
+                      ? { position: "relative", overflow: "hidden", width: "min(100vw, 177.78vh)", height: "min(56.25vw, 100vh)", margin: "0 auto", top: "calc((100vh - min(56.25vw, 100vh)) / 2)", opacity: ytFrameVisible ? 1 : 0, transition: "opacity 0.15s" }
+                      : { position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", opacity: ytFrameVisible ? 1 : 0, transition: "opacity 0.15s" }
                     }
                   />
 
@@ -596,14 +739,15 @@ export default function CourseLearning({
                     </div>
                   )}
 
-                  {/* After first play, when paused: light dim so user sees the paused frame */}
+                  {/* After first play, when paused: no dim, so the paused frame stays readable for notes.
+                      Stops above the controls bar so its buttons stay clickable. */}
                   {!isPlaying && ytStarted && (
                     <div
-                      className="absolute inset-0 flex items-center justify-center cursor-pointer"
-                      style={{ background: "rgba(0,0,0,0.35)", zIndex: 15 }}
+                      className="absolute inset-0 flex items-center justify-center cursor-pointer group/resume"
+                      style={{ background: ytEnded ? "#000" : "transparent", bottom: ytEnded ? 0 : "52px", zIndex: 15 }}
                       onClick={() => ytRef.current?.playVideo()}
                     >
-                      <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/50 hover:bg-white/30 transition-colors">
+                      <div className="w-14 h-14 bg-black/40 rounded-full flex items-center justify-center border-2 border-white/50 opacity-60 group-hover/resume:opacity-100 transition-opacity">
                         <Play className="w-6 h-6 text-white fill-white ml-0.5" />
                       </div>
                     </div>
@@ -618,9 +762,11 @@ export default function CourseLearning({
                     />
                   )}
 
+                  {skipFlashBadge}
+
                   {/* Dynamic watermark */}
-                  {/* Watermark — only shown during playback, not on the black pause screen */}
-                  {isPlaying && (
+                  {/* Watermark — shown whenever the video frame is visible, paused included */}
+                  {ytFrameVisible && (
                     <div
                       aria-hidden="true"
                       style={{
@@ -649,9 +795,12 @@ export default function CourseLearning({
                     >
                       {settingsView === "main" && (
                         <>
-                          <button onClick={toggleYtCaptions} className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/10">
+                          <button onClick={() => setSettingsView("captions")} className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/10">
                             <span className="text-xs text-gray-400 font-medium">Captions</span>
-                            <span className={`text-xs font-medium ${captionsOn ? "text-white" : "text-gray-500"}`}>{captionsOn ? "On" : "Off"}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs font-medium ${captionLang ? "text-white" : "text-gray-500"}`}>{captionLabel}</span>
+                              <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                            </div>
                           </button>
                           <button onClick={() => setSettingsView("speed")} className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/10 transition-colors">
                             <span className="text-xs text-gray-400 font-medium">Speed</span>
@@ -679,6 +828,23 @@ export default function CourseLearning({
                           ))}
                         </>
                       )}
+                      {settingsView === "captions" && (
+                        <>
+                          <button onClick={() => setSettingsView("main")} className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/10 transition-colors border-b border-white/10">
+                            <ChevronLeft className="w-4 h-4 text-gray-400" /><span className="text-sm font-medium">Captions</span>
+                          </button>
+                          <div className="max-h-56 overflow-y-auto overscroll-contain py-1">
+                            {[{ code: null, label: "Off", native: "" }, ...CAPTION_LANGUAGES].map((l) => (
+                              <button key={l.code ?? "off"} onClick={() => selectYtCaptions(l.code)} className="w-full flex items-center gap-3 px-4 py-1.5 hover:bg-white/10 transition-colors">
+                                <Check className={`w-3.5 h-3.5 flex-shrink-0 ${captionLang === l.code ? "text-white" : "text-transparent"}`} />
+                                <span className={`text-sm ${captionLang === l.code ? "text-white font-medium" : "text-gray-300"}`}>{l.label}</span>
+                                {l.native && l.native !== l.label && <span className="text-xs text-gray-500 ml-auto">{l.native}</span>}
+                              </button>
+                            ))}
+                          </div>
+                          <p className="px-4 py-2 text-[10px] text-gray-500 border-t border-white/10">Auto-generated · other languages are auto-translated</p>
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -694,6 +860,8 @@ export default function CourseLearning({
                         className="w-5 h-5 sm:w-8 sm:h-8 flex items-center justify-center text-white hover:text-gray-300 transition-colors">
                         {isPlaying ? <Pause className="w-3 h-3 sm:w-4 sm:h-4 fill-white" /> : <Play className="w-3 h-3 sm:w-4 sm:h-4 fill-white ml-0.5" />}
                       </button>
+                      <SkipButton dir={-1} small onClick={() => skipBy(-SKIP_SECONDS)} />
+                      <SkipButton dir={1} small onClick={() => skipBy(SKIP_SECONDS)} />
                       <span className="text-[9px] sm:text-[11px] text-white/80 font-mono select-none whitespace-nowrap px-1">
                         {formatTime(currentTime)} / {formatTime(duration)}
                       </span>
@@ -746,7 +914,9 @@ export default function CourseLearning({
                   }}
                 />
 
-                {/* Dynamic watermark */}
+                {skipFlashBadge}
+
+                  {/* Dynamic watermark */}
                 <div
                   aria-hidden="true"
                   style={{
@@ -856,6 +1026,8 @@ export default function CourseLearning({
                         ? <Pause className="w-4 h-4 fill-white" />
                         : <Play className="w-4 h-4 fill-white ml-0.5" />}
                     </button>
+                    <SkipButton dir={-1} onClick={() => skipBy(-SKIP_SECONDS)} />
+                    <SkipButton dir={1} onClick={() => skipBy(SKIP_SECONDS)} />
 
                     {/* Time */}
                     <span className="text-[11px] text-white/80 font-mono select-none whitespace-nowrap px-1">
